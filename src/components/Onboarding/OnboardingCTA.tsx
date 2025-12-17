@@ -1,20 +1,30 @@
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import {
+  StyleSheet,
+  Text,
 
+  TouchableOpacity,
+
+  View
+} from "react-native";
+
+import { useRouter } from "expo-router";
 export function OnboardingCTA() {
+  const router = useRouter();
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>
-        Encontre seus{"\n"}jogos ideais!
-      </Text>
+      <Text style={styles.title}>Encontre seus{"\n"}jogos ideais!</Text>
 
-      <Pressable style={styles.button}>
+      <TouchableOpacity style={styles.button} onPress={() => router.push("/register")}>
         <Text style={styles.buttonText}>Registrar</Text>
-      </Pressable>
+      </TouchableOpacity>
 
-      <Text style={styles.login}>
-        Já possui uma conta? <Text style={styles.link}>Logue aqui!</Text>
-      </Text>
-    </View>
+        <Text style={styles.login}>
+          Já possui uma conta?{" "}
+  
+            <Text style={styles.link} onPress={() => router.push("/login")}>Logue aqui!</Text>
+          
+        </Text>
+            </View>
   );
 }
 
@@ -59,5 +69,7 @@ const styles = StyleSheet.create({
   link: {
     color: "#31358B",
     fontWeight: "600",
+    textDecorationLine: "underline"
   },
+
 });

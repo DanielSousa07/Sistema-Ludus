@@ -7,6 +7,7 @@ export function OnboardingBackground() {
       {/* Topo direito */}
       <View style={[styles.circle, styles.topSolid]} />
       <View style={[styles.circle, styles.topLight]} />
+      <View style={[styles.circle, styles.topBlur]} />
       <View style={[styles.circle, styles.topDashed]} />
 
       {/* Inferior esquerdo */}
@@ -26,21 +27,30 @@ const styles = StyleSheet.create({
     position: "absolute",
     borderRadius: 999,
   },
+  topBlur: {
+    width: 150,
+    height: 150,
+    backgroundColor: "rgba(255, 255, 255, 0.1)",
+    top: 90,
+    right: 210,
+    borderRadius: 999,
+    filter: "blur(7px)"
+  },
 
   topSolid: {
     width: 300,
     height: 300,
     backgroundColor: "rgba(255,255,255,0.15)",
     top: -90,
-    right: -90,
+    right: -120,
   },
 
   topLight: {
-    width: 220,
-    height: 220,
+    width: 225,
+    height: 225,
     backgroundColor: "rgba(255,255,255,0.07)",
-    top: -40,
-    right: 10,
+    top: -50,
+    right: -70,
   },
 
   topDashed: {

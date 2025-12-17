@@ -1,14 +1,29 @@
+import { getOnboardingGames, LudopediaGame } from "@/src/services/ludopedia";
+import { useEffect, useState } from "react";
 import { Image, StyleSheet, View } from "react-native";
 
 export function OnboardingHero() {
-    return (
-        <View style={styles.container}>
-            <View style={styles.circle}>
-                <Image source={require("@/assets/images/catan.png")} style={styles.image}/>
+  const [game, setGame] = useState<LudopediaGame | null>(null);
 
-            </View>
-        </View>
-    )
+  useEffect(() => {
+    async function loadRandomGame() {
+      const games = await getOnboardingGames();
+      const randomIndex = Math.floor(Math.random() * games.length);
+      setGame(games[randomIndex]);
+    }
+
+    loadRandomGame();
+  }, []);
+
+  if (!game) return null; // evita piscar layout
+
+  return (
+    <View style={styles.container}>
+      <View style={styles.circle}>
+        <Image source={{ uri: game.image }} style={styles.image} />
+      </View>
+    </View>
+  );
 }
 
 const styles = StyleSheet.create({
