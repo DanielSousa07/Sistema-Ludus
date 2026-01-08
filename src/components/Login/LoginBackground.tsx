@@ -44,6 +44,6 @@ const styles = StyleSheet.create({
     borderColor: "#fff",
     opacity: 0.15,
     right: -80,
-    top: 85,
+    top: 55,
   },
 });

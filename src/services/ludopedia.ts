@@ -25,13 +25,13 @@ export async function getOnboardingGames(): Promise<LudopediaGame[]> {
       id: 3,
       name: "Bang!",
       image:
-        "https://67287.cdn.simplo7.net/static/67287/sku/jogos-de-tabuleiro-e-cardgames-bang-dice-game--p-1624998437343.jpg",
+        "https://storage.googleapis.com/ludopedia-capas/15_t.jpg",
     },
     {
       id: 4,
       name: "Superlemming",
       image:
-        "https://67287.cdn.simplo7.net/static/67287/sku/jogos-de-tabuleiro-e-cardgames-jogo-superlemming-p-1720034538156.jpg",
+        "https://www.spiele-offensive.de/gfx/cf/superlemming/box_gr.jpg",
     },
   ];
 }

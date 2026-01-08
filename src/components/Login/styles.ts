@@ -9,10 +9,11 @@ export const styles = StyleSheet.create({
     backgroundColor: "#fff",
     borderTopLeftRadius: 32,
     borderTopRightRadius: 32,
+    flex: 1,
   },
 
   title: {
-    fontSize: 24,
+    fontSize: 22,
     fontWeight: "700",
     color: "#535353",
     marginBottom: 8,
@@ -102,6 +103,8 @@ export const styles = StyleSheet.create({
     alignItems: "center",
     marginBottom: 32,
     elevation: 2,
+    borderWidth: 1,
+    borderColor: "#ddd",
   },
 
   googleText: {
