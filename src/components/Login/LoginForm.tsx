@@ -8,6 +8,10 @@ export function LoginForm() {
   const router = useRouter();
   const [hidePassword, setHidePassword] = useState(true);
   const {login} = useAuth()
+
+  const [email, setEmail] = useState("");
+  const [senha, setSenha] = useState("");
+
   return (
     <View style={styles.container}>
       {/* Logo e Título */}
@@ -30,6 +34,8 @@ export function LoginForm() {
         placeholder="Seu e-mail ou número de telefone"
         placeholderTextColor="#999"
         style={styles.input}
+        onChangeText={setEmail}
+        value={email}
       />
 
       {/* Password */}
@@ -40,6 +46,8 @@ export function LoginForm() {
           placeholderTextColor="#999"
           secureTextEntry={hidePassword}
           style={styles.inputPassword}
+          onChangeText={setSenha}
+          value={senha}
         />
         <Pressable onPress={() => setHidePassword(!hidePassword)}>
           <Ionicons

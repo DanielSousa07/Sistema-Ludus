@@ -4,7 +4,7 @@ import { api } from "../services/api";
 
 const authContext = createContext({} as any);
 
-export function AuthProvider({ clildren }: any) {
+export function AuthProvider({ children }: any) {
     const [user, setUser] = useState(null);
 
     async function login(email: string, senha: string){
@@ -24,7 +24,7 @@ export function AuthProvider({ clildren }: any) {
 
     return (
         <authContext.Provider value={{user, login, logout}}>
-            {clildren}
+            {children}
         </authContext.Provider>
     );
 }
