@@ -1,4 +1,5 @@
 import { styles } from "@/src/components/Login/styles";
+import { useAuth } from "@/src/contexts/AuthContext";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { useState } from "react";
@@ -6,7 +7,7 @@ import { Image, Pressable, Text, TextInput, View } from "react-native";
 export function LoginForm() {
   const router = useRouter();
   const [hidePassword, setHidePassword] = useState(true);
-
+  const {login} = useAuth()
   return (
     <View style={styles.container}>
       {/* Logo e Título */}
@@ -54,7 +55,7 @@ export function LoginForm() {
       </Pressable>
 
       {/* Button */}
-      <Pressable style={styles.button}>
+      <Pressable style={styles.button} onPress={() => login(email, senha)}>
         <Text style={styles.buttonText}>Logar</Text>
       </Pressable>
 
