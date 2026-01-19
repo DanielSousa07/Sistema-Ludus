@@ -2,7 +2,7 @@ import { StyleSheet, View } from "react-native";
 
 export default function LoginBackground() {
     return (
-        <View>
+        <View style={styles.container}>
             <View style={styles.circleSolid}></View>
             <View style={styles.circleLight}></View>
             <View style={styles.circleDashedSmall}></View>
