@@ -1,11 +1,41 @@
 import * as SecureStore from "expo-secure-store";
-import { createContext, useContext, useState } from "react";
+import { createContext, useContext, useEffect, useState } from "react";
 import { api } from "../services/api";
 
 const authContext = createContext({} as any);
 
 export function AuthProvider({ children }: any) {
     const [user, setUser] = useState(null);
+    const [isLoading, setIsloading] = useState(true);
+
+   useEffect(() => {
+    async function loadStorageData() {
+        // 1. Criamos uma promessa de 2 segundos (ou o tempo da sua animação)
+        const minimumDelay = new Promise(resolve => setTimeout(resolve, 2500));
+
+        try {
+            const storedToken = await SecureStore.getItemAsync("token");
+            const storedUser = await SecureStore.getItemAsync("user");
+
+            console.log("=== DEBUG AUTH ===");
+            console.log("Token no SecureStore:", storedToken ? "Encontrado ✅" : "Vazio ❌");
+            console.log("Dados do User:", storedUser ? "Encontrados ✅" : "Vazio ❌");
+
+            if (storedToken && storedUser) {
+                api.defaults.headers.common["Authorization"] = `Bearer ${storedToken}`;
+                setUser(JSON.parse(storedUser));
+            }
+        } catch (e) {
+            console.log("erro ao carregar dados locais,", e);
+        } finally {
+            // 2. Esperamos o tempo mínimo acabar antes de liberar a tela
+            await minimumDelay;
+            setIsloading(false);
+        }
+    }
+
+    loadStorageData();
+}, []);
 
     async function login(email: string, senha: string) {
         try {
@@ -14,11 +44,12 @@ export function AuthProvider({ children }: any) {
                 email,
                 senha
             });
+            const { token, user: userData} = response.data;
 
-            // Se chegar aqui, o status é 200 (Sucesso)
-            await SecureStore.setItemAsync("token", response.data.token);
-            setUser(response.data.user);
-            
+            await SecureStore.setItemAsync("token", token);
+            await SecureStore.setItemAsync("user", JSON.stringify(userData));
+
+            setUser(userData);
             return { success: true };
 
         } catch (error: any) {
@@ -49,13 +80,14 @@ export function AuthProvider({ children }: any) {
         }
     }
 
-    function logout() {
-        SecureStore.deleteItemAsync("token");
+    async function logout() {
+        await SecureStore.deleteItemAsync("token");
+        await SecureStore.deleteItemAsync("user");
         setUser(null);
     }
 
     return (
-        <authContext.Provider value={{ user, login, logout, register }}>
+        <authContext.Provider value={{ user, login, logout, register, isLoading }}>
             {children}
         </authContext.Provider>
     );
