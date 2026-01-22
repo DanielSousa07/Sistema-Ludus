@@ -8,34 +8,27 @@ export function AuthProvider({ children }: any) {
     const [user, setUser] = useState(null);
     const [isLoading, setIsloading] = useState(true);
 
-   useEffect(() => {
-    async function loadStorageData() {
-        // 1. Criamos uma promessa de 2 segundos (ou o tempo da sua animação)
-        const minimumDelay = new Promise(resolve => setTimeout(resolve, 2500));
+  useEffect(() => {
+        async function loadStorageData() {
+            // Tempo mínimo para a animação da Splash (2.5s)
+            const minimumDelay = new Promise(resolve => setTimeout(resolve, 2500));
+            try {
+                const storedToken = await SecureStore.getItemAsync("token");
+                const storedUser = await SecureStore.getItemAsync("user");
 
-        try {
-            const storedToken = await SecureStore.getItemAsync("token");
-            const storedUser = await SecureStore.getItemAsync("user");
-
-            console.log("=== DEBUG AUTH ===");
-            console.log("Token no SecureStore:", storedToken ? "Encontrado ✅" : "Vazio ❌");
-            console.log("Dados do User:", storedUser ? "Encontrados ✅" : "Vazio ❌");
-
-            if (storedToken && storedUser) {
-                api.defaults.headers.common["Authorization"] = `Bearer ${storedToken}`;
-                setUser(JSON.parse(storedUser));
+                if (storedToken && storedUser) {
+                    api.defaults.headers.common["Authorization"] = `Bearer ${storedToken}`;
+                    setUser(JSON.parse(storedUser));
+                }
+            } catch (e) {
+                console.log("Erro ao carregar dados", e);
+            } finally {
+                await minimumDelay;
+                setIsloading(false); // Só liberta aqui
             }
-        } catch (e) {
-            console.log("erro ao carregar dados locais,", e);
-        } finally {
-            // 2. Esperamos o tempo mínimo acabar antes de liberar a tela
-            await minimumDelay;
-            setIsloading(false);
         }
-    }
-
-    loadStorageData();
-}, []);
+        loadStorageData();
+    }, []);
 
     async function login(email: string, senha: string) {
         try {

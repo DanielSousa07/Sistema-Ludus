@@ -43,6 +43,10 @@ export function LoginForm() {
 
       setTimeout(() => {
         setAlertVisible(false);
+        if (result.user?.role === "ADMIN") {
+           return router.replace("/admin/manage")
+        }
+
         router.replace("/home");
       }, 1200);
 

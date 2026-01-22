@@ -64,6 +64,7 @@ const styles = StyleSheet.create({
   login: {
     textAlign: "center",
     color: "#555568",
+    marginBottom: 12
   },
 
   link: {
