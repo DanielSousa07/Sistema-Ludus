@@ -6,7 +6,7 @@ export default function Register() {
   return (
     <View style={styles.container}>
       <LoginBackground />
-    <BackButton/>
+      <BackButton />
       <RegisterForm />
     </View>
   );

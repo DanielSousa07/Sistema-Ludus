@@ -1,36 +1,20 @@
-import { AuthProvider, useAuth } from '@/src/contexts/AuthContext';
+import { AuthProvider } from '@/src/contexts/AuthContext';
 import { Stack } from 'expo-router';
+import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
-import MySplashScreen from "../src/screens/Splash/SplashScreen";
-
-
-function RootLayoutNav() {
-  const { user, isLoading } = useAuth();
-  console.log("LAYOUT CHECK:", { isLoading, hasUser: !!user });
-
-  if (isLoading) {
-    return <MySplashScreen />;
-  }
-
-  return (
-    <Stack screenOptions={{ headerShown: false }}>
-      {user ? (
-  
-        <Stack.Screen name="home" />
-      ) : (
-
-        <Stack.Screen name="onboarding" />
-      )}
-    </Stack>
-  );
-}
-
 
 export default function Layout() {
   return (
     <SafeAreaProvider>
       <AuthProvider>
-        <RootLayoutNav />
+        <StatusBar style='light' backgroundColor='transparent' translucent/>
+        <Stack screenOptions={{ headerShown: false }}>
+          <Stack.Screen name="index" />
+          <Stack.Screen name="home" />
+          <Stack.Screen name="onboarding" />
+          <Stack.Screen name="login" />
+          <Stack.Screen name="register" />
+        </Stack>
       </AuthProvider>
     </SafeAreaProvider>
   );
