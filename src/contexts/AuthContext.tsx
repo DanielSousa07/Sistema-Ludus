@@ -66,7 +66,12 @@ export function AuthProvider({ children }: any) {
                 email,
                 senha
             });
-            return {success: true}; 
+            const loginResult = await login(email, senha)
+            if (loginResult.success) {
+                return { success: true};
+            } else {
+                return {success: true, message: "Conta criada, faça o login manualmente"}
+            }
         } catch(error: any) {
             const message = error.response?.data?.error || "Error ao cadastrar";
             return {success: false, message};

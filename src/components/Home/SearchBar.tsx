@@ -1,9 +1,8 @@
-import { useAuth } from "@/src/contexts/AuthContext";
 import { Ionicons } from "@expo/vector-icons";
+import { useRouter } from "expo-router";
 import { StyleSheet, TextInput, TouchableOpacity, View } from "react-native";
-
 export default function SearchBar() {
-  const {logout} = useAuth()
+  const router = useRouter()
    return (
     <View style={styles.wrapper}>
       
@@ -17,7 +16,7 @@ export default function SearchBar() {
       </View>
 
     
-      <TouchableOpacity style={styles.filterButton } onPress={logout}>
+      <TouchableOpacity style={styles.filterButton } onPress={() => router.push("/filter")}>
         <Ionicons name="filter" size={22} color="#31358B" />
       </TouchableOpacity>
     </View>

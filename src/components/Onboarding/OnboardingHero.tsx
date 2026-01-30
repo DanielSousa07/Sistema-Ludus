@@ -1,12 +1,26 @@
-import { getOnboardingGames, LudopediaGame } from "@/src/services/ludopedia";
+import { api } from "@/src/services/api";
+import { getOnboardingGames } from "@/src/services/ludopedia";
 import { useEffect, useState } from "react";
 import { Image, StyleSheet, View } from "react-native";
 
 export function OnboardingHero() {
-  const [game, setGame] = useState<LudopediaGame | null>(null);
+  const [game, setGame] = useState<any>(null);
 
+  const PLACEHODER_IMAGE = "https://image.api.playstation.com/vulcan/ap/rnd/202209/2812/jm8wDLnosb3D8W6TUuLGa4jz.jpg"
   useEffect(() => {
     async function loadRandomGame() {
+      try {
+        const response = await api.get("/games")
+        const games = response.data
+
+        if(games.length > 0) {
+          const randomIndex = Math.floor(Math.random() * games.length);
+          setGame(games[randomIndex])
+        }
+      } catch (error) {
+        console.error(error);
+      }
+
       const games = await getOnboardingGames();
       const randomIndex = Math.floor(Math.random() * games.length);
       setGame(games[randomIndex]);
@@ -17,10 +31,11 @@ export function OnboardingHero() {
 
   if (!game) return null; // evita piscar layout
 
+
   return (
     <View style={styles.container}>
       <View style={styles.circle}>
-        <Image source={{ uri: game.image }} style={styles.image} />
+        <Image source={{ uri: game.image || PLACEHODER_IMAGE}} style={styles.image} />
       </View>
     </View>
   );

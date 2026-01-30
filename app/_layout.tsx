@@ -8,10 +8,10 @@ export default function Layout() {
     <SafeAreaProvider>
       <AuthProvider>
         <StatusBar style='light' backgroundColor='transparent' translucent/>
-        <Stack screenOptions={{ headerShown: false }}>
+        <Stack screenOptions={{ headerShown: false, animation: "fade"}}>
           <Stack.Screen name="index" />
           <Stack.Screen name="home" />
-          <Stack.Screen name="manage" />
+          <Stack.Screen name="admin/manage" />
           <Stack.Screen name="onboarding" />
           <Stack.Screen name="login" />
           <Stack.Screen name="register" />

@@ -2,10 +2,10 @@ import { Ionicons } from "@expo/vector-icons";
 import { StyleSheet, Text, View } from "react-native";
 
 const filters = [
-    {icon: "refresh", label: "Status"},
+    {icon: "cube", label: "Status"},
     {icon: "people", label: "Quant Jogadores"},
     {icon: "person", label: "Idade"},
-    {icon: "time", label: "Tempo"},
+    {icon: "hourglass", label: "Tempo"},
 ];
 
 export function  FilterButtons() {

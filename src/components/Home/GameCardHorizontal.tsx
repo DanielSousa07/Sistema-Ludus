@@ -16,7 +16,7 @@ export default function GameCardHorizontal({
 }: GameCardHorizontalProps) {
   return (
     <View style={styles.card}>
-      <Image source={{ uri: image }} style={styles.image} />
+      <Image source={{ uri: image }} style={styles.image} resizeMode="cover"/>
 
       <View style={styles.rating}>
         <Ionicons name="star" size={14} color="#FFC107" />
@@ -34,7 +34,7 @@ export default function GameCardHorizontal({
 
 const styles = StyleSheet.create({
   card: {
-    width: 270,
+    width: 220,
     marginRight: 16,
     marginBottom: 6,
     borderRadius: 20,
@@ -44,7 +44,7 @@ const styles = StyleSheet.create({
 
   image: {
     width: "100%",
-    height: 140,
+    height: 220,
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
   },

@@ -1,22 +1,33 @@
-import { getOnboardingGames, LudopediaGame } from "@/src/services/ludopedia";
 import { useEffect, useRef, useState } from "react";
 import {
-    Animated,
-    Dimensions,
-    Image,
-    StyleSheet,
-    View,
+  Animated,
+  Dimensions,
+  Image,
+  StyleSheet,
+  View,
 } from "react-native";
+
+import { api } from "@/src/services/api";
+
+interface Game {
+  id: string;
+  title: string;
+  cover: string;
+}
 
 const { width } = Dimensions.get("window");
 const ITEM_SIZE = 300;
 
 export function OnboardingCarousel() {
-  const [games, setGames] = useState<LudopediaGame[]>([]);
-  const scrollX = useRef(new Animated.Value(0)).current;
+  const [games, setGames] = useState<Game[]>([])
+  const scrolX = useRef(new Animated.Value(0)).current
+  
 
   useEffect(() => {
-    getOnboardingGames().then(setGames);
+    api.get("/games")
+    .then(response => setGames(response.data))
+    .catch(err => console.error("Erro ao carregar onboarding", err))
+    ;
   }, []);
 
   return (
@@ -31,7 +42,7 @@ export function OnboardingCarousel() {
         paddingHorizontal: (width - ITEM_SIZE) / 2,
       }}
       onScroll={Animated.event(
-        [{ nativeEvent: { contentOffset: { x: scrollX } } }],
+        [{ nativeEvent: { contentOffset: { x: scrolX } } }],
         { useNativeDriver: true }
       )}
       renderItem={({ item, index }) => {
@@ -41,12 +52,12 @@ export function OnboardingCarousel() {
           (index + 1) * ITEM_SIZE,
         ];
 
-        const scale = scrollX.interpolate({
+        const scale = scrolX.interpolate({
           inputRange,
           outputRange: [0.85, 1, 0.85],
         });
 
-        const opacity = scrollX.interpolate({
+        const opacity = scrolX.interpolate({
           inputRange,
           outputRange: [0.6, 1, 0.6],
         });
@@ -59,7 +70,7 @@ export function OnboardingCarousel() {
                 { transform: [{ scale }], opacity },
               ]}
             >
-              <Image source={{ uri: item.image }} style={styles.image} />
+              <Image source={{ uri: item.cover}} style={styles.image} />
             </Animated.View>
           </View>
         );
