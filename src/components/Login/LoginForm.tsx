@@ -31,12 +31,14 @@ export function LoginForm() {
   };
 
   const handleLogin = async () => {
+    const cleanedEmail = email.trim().toLowerCase();
+    const cleanedPassword = senha.trim();
 
-    if (!email || !senha) {
+    if (!cleanedEmail || !cleanedPassword) {
       return showAlert("info", "Inventário vazio", "Preencha e-mail e senha para continuar.")
     }
 
-    const result = await login(email, senha)
+    const result = await login(cleanedEmail, cleanedPassword)
 
     if (result.success) {
       showAlert("success", "Acesso liberado 🛡️", "Bem vindo de volta ao Ludus!")

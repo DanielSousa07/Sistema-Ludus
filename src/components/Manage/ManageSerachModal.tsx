@@ -22,6 +22,13 @@ interface LudopediaGame {
   id: number;
   name: string;
   image: string;
+  description?: string;
+  rating?: number;
+  minPlayers?: number;
+  maxPlayers?: number;
+  minAge?: number;
+  minTime?: number;
+  maxTime?: number;
 }
 
 
@@ -73,6 +80,13 @@ async function handleAddGame(game: LudopediaGame) {
       title: game.name,
       cover: game.image,
       price: 15.0,
+      description: game.description,
+      rating: game.rating,
+      minPlayers: game.minPlayers,
+      maxPlayers: game.maxPlayers,
+      minAge: game.minAge,
+      minTime: game.minTime,
+      maxTime: game.maxTime,
     });
 
     showAlert(
@@ -121,7 +135,7 @@ async function handleAddGame(game: LudopediaGame) {
             />
           </View>
 
-          {/* LIST */}
+          
           {loading ? (
   <ActivityIndicator size="large" color="#31358B" />
 ) : results.length === 0 && hasSearched ? (

@@ -9,6 +9,9 @@ interface FilterValues {
     players: number | null;
     age: number | null;
     stars: number[];
+    priceMin: number; 
+    priceMax: number;
+    timeMax: number;
 }
 
 interface Props {
@@ -24,7 +27,7 @@ export function FilterCard({ onApply }: Props) {
     const [priceMin, setPriceMin] = useState<number>(0);
     const [priceMax, setPriceMax] = useState<number>(100);
 
-    const [timeMin, setTimeMin] = useState<number>(20);
+
     const [timeMax, setTimeMax] = useState<number>(60);
 
 
@@ -77,7 +80,7 @@ export function FilterCard({ onApply }: Props) {
 
                 <Text style={styles.title}>Quantidade de jogadores</Text>
                 <View style={styles.row}>
-                    {[null, 1, 2, 3, 4, 5].map(value => (
+                    {[null,2, 3, 4, 5, 6, 7, 8].map(value => (
                         <TouchableOpacity
                             key={value ?? "ALL"}
                             style={[
@@ -92,14 +95,14 @@ export function FilterCard({ onApply }: Props) {
                                     players === value && styles.squareTextActive,
                                 ]}
                             >
-                                {value === null ? "Todos" : value === 5 ? "5+" : value}
+                                {value === null ? "Todos" : value === 8 ? "8+" : value}
                             </Text>
                         </TouchableOpacity>
                     ))}
                 </View>
                 <Text style={styles.title}>Idade</Text>
                 <View style={styles.row}>
-                    {[null, 4, 6, 8, 10, 12].map(value => (
+                    {[null, 4, 6, 8, 10, 12, 14].map(value => (
                         <TouchableOpacity
                             key={value ?? "ALL"}
                             style={[
@@ -114,7 +117,7 @@ export function FilterCard({ onApply }: Props) {
                                     age === value && styles.squareTextActive,
                                 ]}
                             >
-                                {value === null ? "Todos" : value === 5 ? "5+" : value}
+                                {value === null ? "Todos" : value === 14 ? "14+" : value}
                             </Text>
                         </TouchableOpacity>
                     ))}
@@ -123,8 +126,8 @@ export function FilterCard({ onApply }: Props) {
                 <GameTimeRange
 
 
-                    onChange={(min, max) => {
-                        setTimeMin(min);
+                    onChange={( max) => {
+
                         setTimeMax(max);
                     }}
                 />
@@ -151,7 +154,7 @@ export function FilterCard({ onApply }: Props) {
                 <TouchableOpacity
                     style={styles.button}
                     onPress={() =>
-                        onApply({ status, players, age, stars })
+                        onApply({ status, players, age, stars, priceMin, priceMax, timeMax })
                     }
                 >
                     <Text style={styles.buttonText}>Aplicar Filtros</Text>
