@@ -1,26 +1,13 @@
 import { StyleSheet } from "react-native";
  
-const styles = StyleSheet.create({
+export const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
 
-  backButton: {
-    position: "absolute",
-    top: 60,
-    left: 25,
-    width: 50,
-    height: 50,
-    borderRadius: 16,
-    backgroundColor: "#FFF",
-    justifyContent: "center",
-    alignItems: "center",
-    zIndex: 10,
-  },
 
   card: {
     flex: 1,
-    marginTop: 140,
     backgroundColor: "#F8F8F8",
     borderTopLeftRadius: 40,
     borderTopRightRadius: 40,
@@ -38,13 +25,15 @@ const styles = StyleSheet.create({
 
   otpContainer: {
     flexDirection: "row",
-    justifyContent: "space-between",
+    justifyContent: "center",
     marginTop: 40,
+    gap: 4.7,
   },
 
   input: {
-    width: 60,
-    height: 60,
+    flex: 1,
+    maxWidth: 52,
+    height: 56,
     borderWidth: 1,
     borderColor: "#979BB5",
     borderRadius: 12,
