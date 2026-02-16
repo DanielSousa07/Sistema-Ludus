@@ -8,15 +8,17 @@ export function AuthProvider({ children }: any) {
     const [user, setUser] = useState(null);
     const [isLoading, setIsloading] = useState(true);
 
-  useEffect(() => {
+    useEffect(() => {
         async function loadStorageData() {
             // Tempo mínimo para a animação da Splash (2.5s)
+
             const minimumDelay = new Promise(resolve => setTimeout(resolve, 2500));
             try {
                 const storedToken = await SecureStore.getItemAsync("token");
                 const storedUser = await SecureStore.getItemAsync("user");
 
                 if (storedToken && storedUser) {
+                    // Garante que todas as chamadas futuras usem o token recuperado
                     api.defaults.headers.common["Authorization"] = `Bearer ${storedToken}`;
                     setUser(JSON.parse(storedUser));
                 }
@@ -30,14 +32,14 @@ export function AuthProvider({ children }: any) {
         loadStorageData();
     }, []);
 
-    async function login(email: string, senha: string) {
+    async function login(emailOrPhone: string, senha: string) {
         try {
             // Tenta realizar a chamada para o backend
             const response = await api.post("/auth/login", {
-                email,
-                senha
+                email: emailOrPhone,
+                senha,
             });
-            const { token, user: userData} = response.data;
+            const { token, user: userData } = response.data;
 
             await SecureStore.setItemAsync("token", token);
             await SecureStore.setItemAsync("user", JSON.stringify(userData));
@@ -59,25 +61,38 @@ export function AuthProvider({ children }: any) {
         }
     }
 
-    async function register(name: string, email: string, senha: string) {
-        try {
-            await api.post("/auth/register", {
-                name, 
-                email,
-                senha
-            });
-            const loginResult = await login(email, senha)
-            if (loginResult.success) {
-                return { success: true};
-            } else {
-                return {success: true, message: "Conta criada, faça o login manualmente"}
-            }
-        } catch(error: any) {
-            const message = error.response?.data?.error || "Error ao cadastrar";
-            return {success: false, message};
-        }
-    }
+   async function register(name: string, email: string, phone: string, senha: string) {
+    try {
+        await api.post('/auth/register', { 
+            name, 
+            email, 
+            phone, 
+            senha 
+        });
 
+    
+        const loginResult = await login(email, senha); 
+
+        if (loginResult.success) {
+            return { success: true }; 
+        }
+        
+        return { 
+            success: false, 
+            message: loginResult.message || 'Erro ao logar após registro' 
+        };
+
+    } catch (error: any) {
+        
+        const errorMessage = error.response?.data?.error || "Erro ao conectar com o servidor";
+        console.error("Erro no registro:", errorMessage);
+        
+        return { 
+            success: false, 
+            message: errorMessage 
+        };
+    }
+}
     async function logout() {
         await SecureStore.deleteItemAsync("token");
         await SecureStore.deleteItemAsync("user");

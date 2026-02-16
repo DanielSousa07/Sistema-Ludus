@@ -22,6 +22,7 @@ export default function RegisterForm() {
 
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
+  const [phone, setPhone] = useState("");
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
 
@@ -44,18 +45,18 @@ export default function RegisterForm() {
 
   const { register } = useAuth();
 
-  const handleRegister = async () => {
-    if (password !== confirm) {
-      return showAlert(
-        "error",
-        "Missão falhou",
-        "As senhas não coincidem!"
-      );
-    }
+ const handleRegister = async () => {
+  const cleanEmail = email.trim().toLowerCase();
+  const cleanPhone = phone.trim().replace(/\D/g, '');
 
-    const result = await register(name, email, password);
+  console.log("1. Tentando registrar:", { name, cleanEmail, cleanPhone });
 
-    if (result.success) {
+  try {
+    const result = await register(name, cleanEmail, cleanPhone, password);
+    console.log("2. Resultado do Registro:", result);
+
+    if (result && result.success) {
+      console.log("3. Sucesso! Mostrando alerta...");
       showAlert(
         "success",
         "Level concluído 🎉",
@@ -63,11 +64,21 @@ export default function RegisterForm() {
       );
 
       setTimeout(() => {
+        console.log("4. Navegando para /verify");
         setAlertVisible(false);
-        router.replace("/home");
-      }, 1200);
+        router.push({
+          pathname: "/verify",
+          params: { phone: cleanPhone }
+        });
+      }, 1500);
+    } else {
+      console.log("3. Falha no registro/login:", result?.message);
+      showAlert("error", "Erro", result?.message || "Erro desconhecido");
     }
-  };
+  } catch (error) {
+    console.error("Erro fatal no handleRegister:", error);
+  }
+};
 
   return (
     <View style={styles.container}>
@@ -104,8 +115,20 @@ export default function RegisterForm() {
           placeholderTextColor="#999"
           value={email}
           onChangeText={setEmail}
+          autoCapitalize="none"
+          keyboardType="email-address"
+          autoCorrect={false}
         />
 
+        <Text style={styles.label}>Telefone</Text>
+        <TextInput
+          style={styles.input}
+          placeholder="(00) 0000-0000"
+          placeholderTextColor="#999"
+          value={phone}
+          onChangeText={setPhone}
+          keyboardType="phone-pad"
+        />
 
         <Text style={styles.label}>Senha</Text>
         <View style={styles.passwordWrapper}>
