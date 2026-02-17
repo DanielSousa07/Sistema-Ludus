@@ -23,6 +23,10 @@ export default function VerifyForm() {
   const [alertType, setAlertType] = useState<"error" | "success" | "info">("info");
   const [alertTitle, setAlertTitle] = useState("");
   const [alertMessage, setAlertMessage] = useState("");
+  const [countdown, setCountdown] = useState(30);
+  const [isCounting, setIsCounting] = useState(true);
+  const [resendLoading, setResendLoading] = useState(false);
+
 
   const showAlert = (
     type: "error" | "success" | "info",
@@ -179,7 +183,7 @@ export default function VerifyForm() {
 
     if (digit && index < OTP_LENGTH - 1) {
       focusIndex(index + 1);
-    
+
     }
   };
 
@@ -197,6 +201,45 @@ export default function VerifyForm() {
         return next;
       });
       focusIndex(index - 1);
+    }
+  };
+
+  useEffect(() => {
+    if (!isCounting) return;
+
+    const timer = setInterval(() => {
+      setCountdown((prev) => {
+        if (prev <= 1) {
+          clearInterval(timer);
+          setIsCounting(false);
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+
+    return () => clearInterval(timer);
+  }, [isCounting]);
+
+  const handleResend = async () => {
+    if (isCounting) return;
+
+    try {
+      setResendLoading(true);
+
+      await api.post("/auth/resend-code", { phone });
+
+      showAlert("success", "SMS enviado 📩", "Novo código enviado com sucesso!");
+
+      setCountdown(30);
+      setIsCounting(true);
+    } catch (error: any) {
+      const message =
+        error.response?.data?.error || "Erro ao reenviar código.";
+
+      showAlert("error", "Erro", message);
+    } finally {
+      setResendLoading(false);
     }
   };
 
@@ -259,7 +302,24 @@ export default function VerifyForm() {
 
 
               <Text style={styles.resend}>Você não recebeu o SMS?</Text>
-              <Text style={styles.resendBold}>REENVIAR SMS</Text>
+              <Pressable
+                onPress={handleResend}
+                disabled={isCounting || resendLoading}
+              >
+                <Text
+                  style={[
+                    styles.resendBold,
+                    (isCounting || resendLoading) && { opacity: 0.5 },
+                  ]}
+                >
+                  {isCounting
+                    ? `Reenviar em 00:${countdown.toString().padStart(2, "0")}`
+                    : resendLoading
+                      ? "Enviando..."
+                      : "REENVIAR SMS"}
+                </Text>
+              </Pressable>
+
 
               <View style={{ flexGrow: 1 }} />
 

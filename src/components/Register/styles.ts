@@ -8,6 +8,7 @@ export const styles = StyleSheet.create({
     bottom: 0,
     width: "100%",
     maxHeight: height * 0.85,
+    height: height * 0.85,
     padding: 28,
     backgroundColor: "#fff",
     borderTopLeftRadius: 32,
@@ -53,12 +54,25 @@ export const styles = StyleSheet.create({
     borderColor: "#ccc",
     borderRadius: 16,
     paddingHorizontal: 16,
-    marginBottom: 20,
+    marginBottom: 8,
   },
 
   inputPassword: {
     flex: 1,
     paddingVertical: 16,
+  },
+
+
+  fieldError: {
+    borderColor: "#E62325",
+  },
+
+
+  errorText: {
+    marginBottom: 14,
+    marginTop: 6,
+    color: "#E62325",
+    fontSize: 12,
   },
 
   button: {

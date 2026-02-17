@@ -1,111 +1,142 @@
 import * as SecureStore from "expo-secure-store";
-import { createContext, useContext, useEffect, useState } from "react";
+import React, { createContext, useContext, useEffect, useMemo, useState } from "react";
 import { api } from "../services/api";
 
-const authContext = createContext({} as any);
+type Role = "USER" | "ADMIN" | string;
 
-export function AuthProvider({ children }: any) {
-    const [user, setUser] = useState(null);
-    const [isLoading, setIsloading] = useState(true);
+export type AuthUser = {
+  id: string;
+  nome?: string;      
+  name?: string;      
+  email: string;
+  phone?: string | null;
+  role?: Role;
+  phoneVerified?: boolean;
+};
 
-    useEffect(() => {
-        async function loadStorageData() {
-            // Tempo mínimo para a animação da Splash (2.5s)
+type AuthResult =
+  | { success: true }
+  | { success: false; message: string };
 
-            const minimumDelay = new Promise(resolve => setTimeout(resolve, 2500));
-            try {
-                const storedToken = await SecureStore.getItemAsync("token");
-                const storedUser = await SecureStore.getItemAsync("user");
+type AuthContextValue = {
+  user: AuthUser | null;
+  isLoading: boolean;
+  login: (emailOrPhone: string, senha: string) => Promise<AuthResult>;
+  register: (name: string, email: string, phone: string, senha: string) => Promise<AuthResult>;
+  logout: () => Promise<void>;
+};
 
-                if (storedToken && storedUser) {
-                    // Garante que todas as chamadas futuras usem o token recuperado
-                    api.defaults.headers.common["Authorization"] = `Bearer ${storedToken}`;
-                    setUser(JSON.parse(storedUser));
-                }
-            } catch (e) {
-                console.log("Erro ao carregar dados", e);
-            } finally {
-                await minimumDelay;
-                setIsloading(false); // Só liberta aqui
-            }
+const AuthContext = createContext<AuthContextValue>({} as AuthContextValue);
+
+export function AuthProvider({ children }: { children: React.ReactNode }) {
+  const [user, setUser] = useState<AuthUser | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    async function loadStorageData() {
+      const minimumDelay = new Promise((resolve) => setTimeout(resolve, 2500));
+
+      try {
+        const storedToken = await SecureStore.getItemAsync("token");
+        const storedUser = await SecureStore.getItemAsync("user");
+
+        if (storedToken && storedUser) {
+          api.defaults.headers.common["Authorization"] = `Bearer ${storedToken}`;
+          setUser(JSON.parse(storedUser));
         }
-        loadStorageData();
-    }, []);
-
-    async function login(emailOrPhone: string, senha: string) {
-        try {
-            // Tenta realizar a chamada para o backend
-            const response = await api.post("/auth/login", {
-                email: emailOrPhone,
-                senha,
-            });
-            const { token, user: userData } = response.data;
-
-            await SecureStore.setItemAsync("token", token);
-            await SecureStore.setItemAsync("user", JSON.stringify(userData));
-
-            setUser(userData);
-            return { success: true };
-
-        } catch (error: any) {
-            // Captura erros de status 401, 404, 500 ou erros de rede
-            let message = "Erro ao conectar com o servidor";
-
-            if (error.response) {
-                // O servidor respondeu com um erro (ex: 401)
-                message = error.response.data.error || "E-mail ou senha inválidos";
-            }
-
-            console.error("Erro no login:", message);
-            return { success: false, message };
-        }
+      } catch (e) {
+        console.log("Erro ao carregar dados", e);
+      } finally {
+        await minimumDelay;
+        setIsLoading(false);
+      }
     }
 
-   async function register(name: string, email: string, phone: string, senha: string) {
+    loadStorageData();
+  }, []);
+
+  async function login(emailOrPhone: string, senha: string): Promise<AuthResult> {
     try {
-        await api.post('/auth/register', { 
-            name, 
-            email, 
-            phone, 
-            senha 
-        });
+      const response = await api.post("/auth/login", {
+        email: emailOrPhone,
+        senha,
+      });
 
-    
-        const loginResult = await login(email, senha); 
+      const { token, user: userData } = response.data as {
+        token: string;
+        user: AuthUser;
+      };
 
-        if (loginResult.success) {
-            return { success: true }; 
-        }
-        
-        return { 
-            success: false, 
-            message: loginResult.message || 'Erro ao logar após registro' 
-        };
+      
+      api.defaults.headers.common["Authorization"] = `Bearer ${token}`;
 
+      await SecureStore.setItemAsync("token", token);
+      await SecureStore.setItemAsync("user", JSON.stringify(userData));
+
+      setUser(userData);
+      return { success: true };
     } catch (error: any) {
-        
-        const errorMessage = error.response?.data?.error || "Erro ao conectar com o servidor";
-        console.error("Erro no registro:", errorMessage);
-        
-        return { 
-            success: false, 
-            message: errorMessage 
-        };
-    }
-}
-    async function logout() {
-        await SecureStore.deleteItemAsync("token");
-        await SecureStore.deleteItemAsync("user");
-        setUser(null);
-    }
+      let message = "Erro ao conectar com o servidor";
 
-    return (
-        <authContext.Provider value={{ user, login, logout, register, isLoading }}>
-            {children}
-        </authContext.Provider>
-    );
+      if (error?.response) {
+        message = error.response?.data?.error || "E-mail/telefone ou senha inválidos";
+      }
+
+      console.error("Erro no login:", message);
+      return { success: false, message };
+    }
+  }
+
+  async function register(
+    name: string,
+    email: string,
+    phone: string,
+    senha: string
+  ): Promise<AuthResult> {
+    try {
+      await api.post("/auth/register", { name, email, phone, senha });
+
+      
+      const loginResult = await login(email, senha);
+
+      if (loginResult.success) {
+        return { success: true };
+      }
+
+      return {
+        success: false,
+        message: "Conta criada, mas não foi possível fazer login automaticamente.",
+      };
+    } catch (error: any) {
+      const errorMessage =
+        error?.response?.data?.error || "Erro ao conectar com o servidor";
+      console.error("Erro no registro:", errorMessage);
+
+      return {
+        success: false,
+        message: errorMessage,
+      };
+    }
+  }
+
+  async function logout() {
+    await SecureStore.deleteItemAsync("token");
+    await SecureStore.deleteItemAsync("user");
+
+    // ✅ limpa header também
+    delete api.defaults.headers.common["Authorization"];
+
+    setUser(null);
+  }
+
+  const value = useMemo(
+    () => ({ user, login, logout, register, isLoading }),
+    [user, isLoading]
+  );
+
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
 
 export function useAuth() {
-    return useContext(authContext);
+  return useContext(AuthContext);
 }
