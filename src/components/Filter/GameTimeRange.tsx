@@ -1,84 +1,52 @@
 import Slider from "@react-native-community/slider";
-import { useState } from "react";
-import { StyleSheet, Text, View } from "react-native";
+import { useEffect, useMemo, useState } from "react";
+import { Text, View } from "react-native";
+import { styles } from "./styles";
 
 type Props = {
-  // Agora passamos apenas o valor máximo para filtrar no backend
-  onChange: (maxTime: number) => void;
+  valueMax: number;
+  onChange: (max: number) => void;
+
+  minLimit?: number;
+  maxLimit?: number;
 };
 
-export function GameTimeRange({ onChange }: Props) {
-  const [max, setMax] = useState(60);
+export function GameTimeRange({
+  valueMax,
+  onChange,
+  minLimit = 15,
+  maxLimit = 180,
+}: Props) {
+  const [max, setMax] = useState(valueMax);
 
-  function handleChange(value: number) {
-    setMax(value);
-    onChange(value);
-  }
+  useEffect(() => {
+    setMax(valueMax);
+  }, [valueMax]);
+
+  const label = useMemo(() => {
+    if (max >= maxLimit) return `${maxLimit}+ min`;
+    return `Até ${max} min`;
+  }, [max, maxLimit]);
+
+  const commit = (v: number) => {
+    const clamped = Math.max(minLimit, Math.min(v, maxLimit));
+    setMax(clamped);
+    onChange(clamped);
+  };
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Tempo de Jogo</Text>
+    <View style={{ marginTop: 18 }}>
+      <Text style={styles.title}>Tempo de jogo</Text>
+      <Text style={{ color: "#535353", marginBottom: 10 }}>{label}</Text>
 
-      <View style={styles.sliderWrapper}>
-      
-        <View style={styles.track} />
-
-        <Slider
-          style={styles.absoluteSlider}
-          minimumValue={15}
-          maximumValue={120}
-          step={5}
-          value={max}
-          minimumTrackTintColor="#B3193A" 
-          maximumTrackTintColor="transparent" 
-          thumbTintColor="#B3193A"
-          onValueChange={handleChange}
-        />
-      </View>
-
-      <View style={styles.value}>
-        <Text>{max} min</Text>
-      </View>
+      <Slider
+        minimumValue={minLimit}
+        maximumValue={maxLimit}
+        step={5}
+        value={max}
+        onValueChange={(v) => setMax(v)}
+        onSlidingComplete={commit}
+      />
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    marginTop: 24,
-  },
-
-  title: {
-    fontSize: 18,
-    fontWeight: "700",
-    color: "#535353",
-    marginBottom: 12,
-  },
-
-  sliderWrapper: {
-    height: 36,
-    justifyContent: "center",
-    marginVertical: 6,
-  },
-
-  absoluteSlider: {
-    position: "absolute",
-    left: 0,
-    right: 0,
-    height: 40,
-  },
-
-  track: {
-    position: "absolute",
-    height: 3,
-    width: "100%",
-    backgroundColor: "rgba(0,0,0,0.15)",
-    borderRadius: 2,
-  },
-
-  value: {
-    flexDirection: "row",
-    justifyContent: "flex-end",
-    marginTop: 4,
-  },
-});

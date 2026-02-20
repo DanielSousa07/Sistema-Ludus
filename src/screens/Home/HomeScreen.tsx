@@ -3,6 +3,7 @@ import { FilterButtons } from "@/src/components/Home/FilterButtons";
 import { Header } from "@/src/components/Home/Header";
 import { HomeCard } from "@/src/components/Home/HomeCard";
 import SearchBar from "@/src/components/Home/SearchBar";
+import { useFilters } from "@/src/contexts/FiltersContext";
 import { api } from "@/src/services/api";
 import { useRouter } from "expo-router";
 import { useEffect, useState } from "react";
@@ -25,6 +26,9 @@ export default function HomeScreen() {
     }
     loadGames();
   }, [])
+
+  const { activeCount } = useFilters();
+  
   return (
     <View style={{ flex: 1 }}>
       <ScrollView contentContainerStyle={{ paddingBottom: 65 }}>
@@ -44,6 +48,7 @@ export default function HomeScreen() {
               params: { q: search },
             })
           }}
+          activeFiltersCount={activeCount}
         />
         <FilterButtons />
         <HomeCard games={games} />

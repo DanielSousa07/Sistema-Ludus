@@ -67,7 +67,7 @@ export default function RegisterForm() {
 
   const cleanPhone = useMemo(() => phone.replace(/\D/g, ""), [phone]);
 
-  // ✅ Erros inline (visuais) – só aparece depois que interagir
+  
   const passwordError =
     touched.password && password.length > 0 && password.length < 6
       ? "Use pelo menos 6 caracteres."
@@ -128,7 +128,7 @@ export default function RegisterForm() {
           setAlertVisible(false);
           router.push({
             pathname: "/verify",
-            params: { phone: cleanPhoneDigits },
+            params: { email: cleanEmail ,phone: cleanPhoneDigits},
           });
         }, 1200);
       } else {

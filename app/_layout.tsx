@@ -1,4 +1,5 @@
 import { AuthProvider } from "@/src/contexts/AuthContext";
+import { FilterProvider } from "@/src/contexts/FiltersContext";
 import { setRouter } from "@/src/services/navigation";
 import { Stack, useRouter } from "expo-router";
 import { StatusBar } from "expo-status-bar";
@@ -15,16 +16,18 @@ export default function Layout() {
   return (
     <SafeAreaProvider>
       <AuthProvider>
-        <StatusBar style="light" backgroundColor="transparent" translucent />
-        <Stack screenOptions={{ headerShown: false, animation: "fade" }}>
-          <Stack.Screen name="index" />
-          <Stack.Screen name="home" />
-          <Stack.Screen name="admin/manage" />
-          <Stack.Screen name="onboarding" />
-          <Stack.Screen name="login" />
-          <Stack.Screen name="register" />
-          <Stack.Screen name="verify" /> 
-        </Stack>
+        <FilterProvider>
+          <StatusBar style="light" backgroundColor="transparent" translucent />
+          <Stack screenOptions={{ headerShown: false, animation: "fade" }}>
+            <Stack.Screen name="index" />
+            <Stack.Screen name="home" />
+            <Stack.Screen name="admin/manage" />
+            <Stack.Screen name="onboarding" />
+            <Stack.Screen name="login" />
+            <Stack.Screen name="register" />
+            <Stack.Screen name="verify" />
+          </Stack>
+        </FilterProvider>
       </AuthProvider>
     </SafeAreaProvider>
   );

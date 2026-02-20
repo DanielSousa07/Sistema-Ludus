@@ -6,11 +6,14 @@ export function setRouter(router: Router) {
   routerRef = router;
 }
 
-export function goToVerify(phone?: string) {
+export function goToVerify(params?: { email?: string; phone?: string }) {
   if (!routerRef) return;
 
   routerRef.replace({
     pathname: "/verify",
-    params: phone ? { phone } : {},
+    params: {
+      ...(params?.email ? { email: params.email } : {}),
+      ...(params?.phone ? { phone: params.phone } : {}),
+    },
   });
 }

@@ -1,38 +1,83 @@
 import { Ionicons } from "@expo/vector-icons";
 import { Image, StyleSheet, Text, View } from "react-native";
 
-type Props = {
-  data: {
-    title: string;
-    location: string;
-    price: number;
-    days: number;
-    rating: number;
-    image: string;
-  };
+export type Game = {
+  id: string;
+  title: string;
+  cover?: string | null;
+  price: number;
+  rating?: number | null;
+  minPlayers?: number | null;
+  maxPlayers?: number | null;
+  minAge?: number | null;
+  minTime?: number | null;
+  maxTime?: number | null;
+  available?: boolean;
 };
 
-export default function GameCard({ data }: Props) {
+type Props = {
+  item: Game;
+};
+
+export default function GameCard({ item }: Props) {
+  const isAvailable = item?.available !== false;
+
+  const rating = typeof item?.rating === "number" ? item.rating.toFixed(1) : "0.0";
+
+  const playersText =
+    item?.minPlayers && item?.maxPlayers
+      ? `${item.minPlayers}-${item.maxPlayers} jogadores`
+      : item?.minPlayers
+      ? `${item.minPlayers}+ jogadores`
+      : "—";
+
+  const coverUri =
+    item?.cover ||
+    "https://via.placeholder.com/200x300.png?text=Ludus";
+
+  const priceText = Number(item?.price ?? 0).toFixed(2);
+
   return (
     <View style={styles.card}>
-      <Image source={{uri: data.image}} style={styles.image} resizeMode="contain" />
+      <Image source={{ uri: coverUri }} style={styles.image} resizeMode="cover" />
 
       <View style={styles.info}>
-        <Text style={styles.title}>{data.title}</Text>
+        <View>
+          <Text style={styles.title} numberOfLines={2}>
+            {item.title}
+          </Text>
 
-        <View style={styles.location}>
-          <Ionicons name="location-outline" size={14} color="#777" />
-          <Text style={styles.locationText}>{data.location}</Text>
+          <View style={styles.metaRow}>
+            <Ionicons name="people-outline" size={14} color="#777" />
+            <Text style={styles.metaText}>{playersText}</Text>
+          </View>
+
+          <View style={styles.metaRow}>
+            <Ionicons
+              name={isAvailable ? "checkmark-circle-outline" : "close-circle-outline"}
+              size={14}
+              color={isAvailable ? "#2E7D32" : "#E62325"}
+            />
+            <Text
+              style={[
+                styles.metaText,
+                { color: isAvailable ? "#2E7D32" : "#E62325" },
+              ]}
+            >
+              {isAvailable ? "Disponível" : "Indisponível"}
+            </Text>
+          </View>
         </View>
 
         <View style={styles.footer}>
           <Text style={styles.price}>
-            R${data.price} <Text style={styles.days}>/ {data.days} dias</Text>
+            R$ {priceText}
+            <Text style={styles.perDay}> / dia</Text>
           </Text>
 
           <View style={styles.rating}>
             <Ionicons name="star" size={14} color="#FFC107" />
-            <Text>{data.rating}</Text>
+            <Text style={styles.ratingText}>{rating}</Text>
           </View>
         </View>
       </View>
@@ -48,11 +93,17 @@ const styles = StyleSheet.create({
     marginBottom: 16,
     padding: 16,
     flexDirection: "row",
+    elevation: 3,
+    shadowColor: "#000",
+    shadowOpacity: 0.06,
+    shadowRadius: 6,
+    shadowOffset: { width: 0, height: 2 },
   },
 
   image: {
-    width: 80,
-    height: 120,
+    width: 90,
+    height: 130,
+    borderRadius: 12,
     marginRight: 16,
   },
 
@@ -64,15 +115,17 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 16,
     fontWeight: "700",
+    marginBottom: 6,
   },
 
-  location: {
+  metaRow: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 4,
+    gap: 6,
+    marginTop: 2,
   },
 
-  locationText: {
+  metaText: {
     fontSize: 12,
     color: "#777",
   },
@@ -81,25 +134,33 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
+    marginTop: 10,
   },
 
   price: {
     color: "#2E7D32",
     fontWeight: "700",
+    fontSize: 14,
   },
 
-  days: {
+  perDay: {
     color: "#777",
     fontWeight: "400",
+    fontSize: 12,
   },
 
   rating: {
     flexDirection: "row",
     alignItems: "center",
     gap: 4,
-    backgroundColor: "#EEE",
+    backgroundColor: "#F3F3F3",
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 12,
+  },
+
+  ratingText: {
+    fontSize: 12,
+    fontWeight: "600",
   },
 });

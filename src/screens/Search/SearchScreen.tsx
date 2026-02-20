@@ -1,127 +1,200 @@
-import FilterButton from "@/src/components/common/FilterButton";
-import GameCard from "@/src/components/Search/GameCard";
+import { useFilters } from "@/src/contexts/FiltersContext";
+import { api } from "@/src/services/api";
+import { Ionicons } from "@expo/vector-icons";
+import { useLocalSearchParams, useRouter } from "expo-router";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import {
+    FlatList,
+    Image,
+    Pressable,
+    RefreshControl,
+    Text,
+    View,
+} from "react-native";
+
+import GameCard, { Game } from "@/src/components/Search/GameCard";
 import SearchBackground from "@/src/components/Search/SearchBackground";
 import SearchTop from "@/src/components/Search/SearchTop";
-import { api } from "@/src/services/api";
-import { useLocalSearchParams, useRouter } from "expo-router";
-import { useEffect, useState } from "react";
-import { ActivityIndicator, FlatList, Text, View } from "react-native";
-import { styles } from "./styles";
 
-interface Game {
-    id: string;
-    title: string;
-    cover: string;
-    price: number;
-    available: boolean; // Adicionado para exibir o status real
-}
 
-// Tipagem para os parâmetros de busca que podem vir na URL
-interface SearchParams {
-    q?: string;
-    status?: string;
-    players?: string;
-    age?: string;
-    priceMin?: string;
-    priceMax?: string;
-    timeMax?: string;
-}
+const EMPTY_IMAGE = require("../../../assets/no-result.png")
 
 export default function SearchScreen() {
-    const router = useRouter();
-    // Captura todos os possíveis parâmetros da URL
-    const params = useLocalSearchParams<Record<string, string>>();
-    const { q, status, players, age, priceMin, priceMax, timeMax } = params;
+  const router = useRouter();
+  const params = useLocalSearchParams();
 
-    const [search, setSearch] = useState("");
-    const [games, setGames] = useState<Game[]>([]);
-    const [loading, setLoading] = useState(false);
+  const qParam = Array.isArray(params.q) ? params.q[0] : (params.q as string | undefined);
+  const initialQ = (qParam || "").toString();
 
-    function handleSearch() {
-        router.setParams({ q: search });
+  const { filters, activeCount } = useFilters();
+
+  const [q, setQ] = useState(initialQ);
+  const [games, setGames] = useState<Game[]>([]);
+  const [refreshing, setRefreshing] = useState(false);
+
+  const requestIdRef = useRef(0);
+
+  const queryParams = useMemo(() => {
+    const status = filters.status === "ALL" ? undefined : filters.status;
+
+    return {
+      q: q.trim() || undefined,
+      status,
+      players: filters.players ?? undefined,
+      age: filters.age ?? undefined,
+      stars: filters.stars.length ? filters.stars.join(",") : undefined,
+      priceMin: filters.priceMin,
+      priceMax: filters.priceMax,
+      timeMax: filters.timeMax,
+    };
+  }, [q, filters]);
+
+  const fetchGames = useCallback(async () => {
+    const currentId = ++requestIdRef.current;
+    try {
+      const res = await api.get("/games", { params: queryParams });
+      if (currentId !== requestIdRef.current) return;
+      setGames(res.data || []);
+    } catch (e) {
+      console.log("Erro ao buscar jogos:", e);
+      setGames([]);
     }
+  }, [queryParams]);
 
-    useEffect(() => {
-        if (q) setSearch(q);
-    }, [q]);
+  useEffect(() => {
+    router.setParams({ q: q || undefined });
+    fetchGames();
+  }, [q, fetchGames, router]);
 
-   useEffect(() => {
-    async function fetchResults() {
-        setLoading(true);
-        try {
-            // Criamos um objeto apenas com o que realmente tem valor
-            const searchParams: any = { q: q || "" };
+  const onRefresh = async () => {
+    setRefreshing(true);
+    await fetchGames();
+    setRefreshing(false);
+  };
 
-            if (status && status !== "ALL") searchParams.status = status;
-            
-            // Verificamos se não é a string "null" que o router às vezes passa
-            if (players && players !== "null") searchParams.players = players;
-            if (age && age !== "null") searchParams.age = age;
-            if (priceMin) searchParams.priceMin = priceMin;
-            if (priceMax) searchParams.priceMax = priceMax;
-            if (timeMax) searchParams.timeMax = timeMax;
+  const onSubmitSearch = () => fetchGames();
 
-            const response = await api.get('/games', { params: searchParams });
-            setGames(response.data);
-        } catch (error) {
-            // Verifique o log do terminal do VS Code (Backend) para ver o erro real
-            console.error("Erro na busca:", error);
-        } finally {
-            setLoading(false);
-        }
-    }
-    fetchResults();  
-}, [q, status, players, age, priceMin, priceMax, timeMax]);
+  return (
+    <View style={{ flex: 1 }}>
+      <SearchBackground />
 
-    return (
-        <View style={styles.container}>
-            <SearchBackground />
+      
+      <SearchTop
+        value={q}
+        onChangeText={setQ}
+        onSubmit={onSubmitSearch}
+        onOpenFilters={() => router.push("/filter")}
+        activeFiltersCount={activeCount}
+      />
 
-            <View style={styles.header}>
-                <SearchTop
-                    value={search}
-                    onChangeText={setSearch}
-                    onSubmitEditing={handleSearch}
-                    placeholder="Buscar jogos"
-                />
-            </View>
+      
+      <View
+        style={{
+          flex: 1,
+          marginTop: 25,
+          backgroundColor: "#FFFFFF",
+          borderTopLeftRadius: 32,
+          borderTopRightRadius: 32,
+          paddingTop: 18,
+          overflow: "hidden",
+        }}
+      >
+        
+        <View
+          style={{
+            paddingHorizontal: 18,
+            flexDirection: "row",
+            alignItems: "center",
+            justifyContent: "space-between",
+            marginBottom: 14,
+          }}
+        >
+          <Text style={{ fontSize: 22, fontWeight: "800", color: "#555" }}>
+            {games.length} Resultados
+          </Text>
 
-            <View style={styles.cardWrapper}>
-               {loading ? (
-                    <ActivityIndicator size="large" color="#31358B" style={{ marginTop: 50 }} />
-                ) : (
-                    <FlatList
-                        data={games}
-                        keyExtractor={(item) => String(item.id)}
-                        renderItem={({ item }) => (
-                            <GameCard data={{
-                                title: item.title,
-                                location: item.available ? "Disponível" : "Indisponível",
-                                price: item.price,
-                                days: 5, 
-                                rating: 5.0,
-                                image: item.cover 
-                            }} />
-                        )}
-                        showsVerticalScrollIndicator={false}
-                        contentContainerStyle={styles.scrollContent}
-                        ListEmptyComponent={
-                            <Text style={{ textAlign: 'center', marginTop: 20, color: '#999' }}>
-                                Nenhum jogo encontrado com esses filtros.
-                            </Text>
-                        }
-                        ListHeaderComponent={
-                            <View style={styles.listHeader}>
-                                <Text style={styles.resultsText}>
-                                    {games.length} Resultados
-                                </Text>
-                                {/* O FilterButton agora deve abrir o Modal que chama router.setParams */}
-                                <FilterButton />
-                            </View>
-                        }
-                    />
-                )}
-            </View>
+          <Pressable
+            onPress={() => router.push("/filter")}
+            style={{
+              height: 44,
+              paddingHorizontal: 16,
+              borderRadius: 14,
+              backgroundColor: "#B3193A",
+              flexDirection: "row",
+              alignItems: "center",
+              gap: 8,
+            }}
+          >
+            <Ionicons name="filter" size={18} color="#fff" />
+            <Text style={{ color: "#fff", fontWeight: "800" }}>Filtros</Text>
+
+            {activeCount > 0 && (
+              <View
+                style={{
+                  marginLeft: 6,
+                  minWidth: 18,
+                  height: 18,
+                  paddingHorizontal: 5,
+                  borderRadius: 999,
+                  backgroundColor: "#E62325",
+                  alignItems: "center",
+                  justifyContent: "center",
+                }}
+              >
+                <Text style={{ color: "#fff", fontSize: 11, fontWeight: "800" }}>
+                  {activeCount > 9 ? "9+" : activeCount}
+                </Text>
+              </View>
+            )}
+          </Pressable>
         </View>
-    );
+
+        <FlatList
+          data={games}
+          keyExtractor={(item) => String(item.id)}
+          renderItem={({ item }) => <GameCard item={item} />}
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={{
+            paddingBottom: 20,
+            paddingTop: 4,
+            flexGrow: 1, 
+          }}
+          refreshControl={
+            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+          }
+          ListEmptyComponent={
+            <View
+              style={{
+                flex: 1,
+                alignItems: "center",
+                justifyContent: "center",
+                paddingBottom: 50,
+              }}
+            >
+              
+                <Image
+                  source={EMPTY_IMAGE}
+                  style={{ width: 140, height: 140, marginBottom: 18, opacity: 0.85 }}
+                  resizeMode="contain"
+                />
+          
+
+              <Text
+                style={{
+                  marginTop: 6,
+                  fontSize: 14,
+                  color: "#8B8EA1",
+                  textAlign: "center",
+                  paddingHorizontal: 30,
+                  lineHeight: 20,
+                }}
+              >
+                Tente buscar por outro nome ou ajuste os filtros.
+              </Text>
+            </View>
+          }
+        />
+      </View>
+    </View>
+  );
 }

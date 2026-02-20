@@ -1,14 +1,14 @@
-import AsyncStorage from "@react-native-async-storage/async-storage";
 import axios from "axios";
+import * as SecureStore from "expo-secure-store";
 import { goToVerify } from "./navigation";
 
 export const api = axios.create({
   baseURL: "http://192.168.18.153:3000", 
-})
+});
 
 
 api.interceptors.request.use(async (config) => {
-  const token = await AsyncStorage.getItem("@Ludus:token");
+  const token = await SecureStore.getItemAsync("token");
 
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
@@ -24,15 +24,19 @@ api.interceptors.response.use(
     const status = error?.response?.status;
     const code = error?.response?.data?.code;
 
-    const url = error?.config?.url || "";
-    const isVerifyEndpoint = url.includes("/auth/verify-phone");
-
-    if (status === 403 && code === "PHONE_NOT_VERIFIED" && !isVerifyEndpoint) {
     
-      const storedUser = await AsyncStorage.getItem("@Ludus:user");
-      const phone = storedUser ? JSON.parse(storedUser)?.phone : undefined;
+    const url = (error?.config?.url || "").toString();
+    const isVerifyRelated =
+      url.includes("/auth/verify-email") ||
+      url.includes("/auth/resend-email-code") ||
+      url.includes("/auth/verify-phone") ||
+      url.includes("/auth/resend-code");
 
-      goToVerify(phone);
+    if (status === 403 && code === "EMAIL_NOT_VERIFIED" && !isVerifyRelated) {
+      const storedUser = await SecureStore.getItemAsync("user");
+      const user = storedUser ? JSON.parse(storedUser) : null;
+
+      goToVerify({ email: user?.email, phone: user?.phone });
     }
 
     return Promise.reject(error);

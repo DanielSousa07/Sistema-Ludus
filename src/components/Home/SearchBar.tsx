@@ -1,17 +1,19 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
-import { StyleSheet, TextInput, TouchableOpacity, View } from "react-native";
+import { StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
 
 type Props = {
   value: string;
   onChangeText: (text: string) => void;
   onSubmitEditing: () => void;
+  activeFiltersCount?: number; 
 };
 
 export default function SearchBar({
   value,
   onChangeText,
   onSubmitEditing,
+  activeFiltersCount
 }: Props) {
   const router = useRouter();
 
@@ -35,6 +37,13 @@ export default function SearchBar({
         onPress={() => router.push("/filter")}
       >
         <Ionicons name="filter" size={22} color="#31358B" />
+        {!!activeFiltersCount && activeFiltersCount > 0 && (
+          <View style={styles.badge}>
+            <Text>
+                { activeFiltersCount > 9 ? "9+": activeFiltersCount}
+            </Text>
+          </View>
+        )}
       </TouchableOpacity>
     </View>
   );
@@ -83,5 +92,22 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.3,
     shadowRadius: 30,
     elevation: 4,
+  },
+  badge: {
+    position: "absolute",
+    top: 10,
+    right: 10,
+    minWidth: 18,
+    height: 18,
+    paddingHorizontal: 5,
+    borderRadius:  999,
+    backgroundColor: "#E62325",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  badgetext: {
+    color: "#fff",
+    fontSize: 11,
+    fontWeight: "700",
   },
 });

@@ -34,7 +34,7 @@ export default function GameCardHorizontal({
 
 const styles = StyleSheet.create({
   card: {
-    width: 220,
+    width: 200,
     marginRight: 16,
     marginBottom: 6,
     borderRadius: 20,
@@ -44,7 +44,7 @@ const styles = StyleSheet.create({
 
   image: {
     width: "100%",
-    height: 220,
+    height: 250,
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
   },
