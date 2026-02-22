@@ -18,9 +18,9 @@ export default function FilterScreen() {
   }
 
   return (
-    <View style={{ flex: 1 }}>
+    <View style={{ flex: 1}}>
       <FilterBackground />
-      <FilterCard onApply={handleApplyFilters} initialValues={filters} />
+      <FilterCard onApply={handleApplyFilters} initialValues={filters}/>
     </View>
   );
 }

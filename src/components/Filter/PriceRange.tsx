@@ -64,9 +64,12 @@ export default function PriceRange({
         onSlidingComplete={(v) => {
           commit(Math.min(v, max), max);
         }}
+        minimumTrackTintColor="#B3193A"
+        maximumTrackTintColor="#c1acace3"
+        thumbTintColor="#B3193A"
       />
 
-      {/* Slider do máximo */}
+      
       <Text style={{ color: "#535353", marginTop: 12, marginBottom: 6 }}>Máximo</Text>
       <Slider
         minimumValue={minLimit}
@@ -80,6 +83,9 @@ export default function PriceRange({
         onSlidingComplete={(v) => {
           commit(min, Math.max(v, min));
         }}
+        minimumTrackTintColor="#B3193A"
+        maximumTrackTintColor="#B3193A"
+        thumbTintColor="#B3193A"
       />
     </View>
   );

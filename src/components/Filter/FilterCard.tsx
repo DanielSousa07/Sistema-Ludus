@@ -29,7 +29,7 @@ export function FilterCard({ onApply, initialValues }: Props) {
   }
 
   const handleClear = () => {
-    // reset local
+    
     setStatus(DEFAULTS.status);
     setPlayers(DEFAULTS.players);
     setAge(DEFAULTS.age);
@@ -38,7 +38,7 @@ export function FilterCard({ onApply, initialValues }: Props) {
     setPriceMax(DEFAULTS.priceMax);
     setTimeMax(DEFAULTS.timeMax);
 
-    // reset global
+  
     resetFilters();
   };
 
@@ -55,15 +55,15 @@ export function FilterCard({ onApply, initialValues }: Props) {
   }, [status, players, age, stars, priceMin, priceMax, timeMax]);
 
   return (
-    <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 24 }}>
+    <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 6, flexGrow: 1}}>
       <View style={styles.card}>
-        {/* Header do card + Limpar */}
+      
         <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
           <Text style={styles.title}>Status do jogo</Text>
 
           <TouchableOpacity onPress={handleClear} disabled={!canClear}>
-            <Text style={{ color: "#E62325", fontWeight: "700", opacity: canClear ? 1 : 0.4 }}>
-              Limpar
+            <Text style={{ color: "#dd1519", fontWeight: "700", opacity: canClear ? 1 : 0.4 }}>
+              Limpar Tudo
             </Text>
           </TouchableOpacity>
         </View>
@@ -87,7 +87,7 @@ export function FilterCard({ onApply, initialValues }: Props) {
           ))}
         </View>
 
-        {/* ✅ PriceRange precisa receber valor atual pra manter ativo */}
+        
         <PriceRange
           valueMin={priceMin}
           valueMax={priceMax}
@@ -127,7 +127,7 @@ export function FilterCard({ onApply, initialValues }: Props) {
           ))}
         </View>
 
-        {/* ✅ GameTimeRange precisa receber valor atual */}
+        
         <GameTimeRange
           valueMax={timeMax}
           onChange={(max) => setTimeMax(max)}

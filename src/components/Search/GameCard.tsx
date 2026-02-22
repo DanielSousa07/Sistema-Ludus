@@ -1,5 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
-import { Image, StyleSheet, Text, View } from "react-native";
+import { useRouter } from "expo-router";
+import { Image, Pressable, StyleSheet, Text, View } from "react-native";
 
 export type Game = {
   id: string;
@@ -20,6 +21,7 @@ type Props = {
 };
 
 export default function GameCard({ item }: Props) {
+  const router = useRouter()
   const isAvailable = item?.available !== false;
 
   const rating = typeof item?.rating === "number" ? item.rating.toFixed(1) : "0.0";
@@ -28,8 +30,8 @@ export default function GameCard({ item }: Props) {
     item?.minPlayers && item?.maxPlayers
       ? `${item.minPlayers}-${item.maxPlayers} jogadores`
       : item?.minPlayers
-      ? `${item.minPlayers}+ jogadores`
-      : "—";
+        ? `${item.minPlayers}+ jogadores`
+        : "—";
 
   const coverUri =
     item?.cover ||
@@ -38,7 +40,7 @@ export default function GameCard({ item }: Props) {
   const priceText = Number(item?.price ?? 0).toFixed(2);
 
   return (
-    <View style={styles.card}>
+    <Pressable style={({ pressed }) => [styles.card, pressed && { opacity: 0.9 }]} onPress={() => router.push(`/game/${item.id}`)}>
       <Image source={{ uri: coverUri }} style={styles.image} resizeMode="cover" />
 
       <View style={styles.info}>
@@ -81,7 +83,7 @@ export default function GameCard({ item }: Props) {
           </View>
         </View>
       </View>
-    </View>
+    </Pressable>
   );
 }
 

@@ -46,6 +46,9 @@ export function GameTimeRange({
         value={max}
         onValueChange={(v) => setMax(v)}
         onSlidingComplete={commit}
+        minimumTrackTintColor="#B3193A"
+        maximumTrackTintColor="#c1acace3"
+        thumbTintColor="#B3193A"
       />
     </View>
   );
