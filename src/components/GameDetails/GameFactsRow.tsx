@@ -31,6 +31,7 @@ export function GameFactsRow({ players, time, age }: Props) {
 const styles = StyleSheet.create({
   row: {
     flexDirection: "row",
+    flexWrap: "wrap",
     gap: 10,
     marginTop: 10,
     marginBottom: 10,
