@@ -1,31 +1,49 @@
-import { FlatList } from "react-native";
+import { useRouter } from "expo-router";
+import { FlatList, StyleSheet, View } from "react-native";
 import GameCardHorizontal from "./GameCardHorizontal";
 
-interface ForYouGame {
+export interface ForYouGame {
   id: string;
   title: string;
   price: number;
-  rating?: number;
-
-  cover: string;
+  rating?: number | null;
+  ratingsCount?: number | null;
+  cover?: string | null;
 }
 
+export default function GameCarousel({ data }: { data: ForYouGame[] }) {
+  const router = useRouter();
 
-export default function GameCarousel({data}: {data: ForYouGame[]}) {
-    return (
-        <FlatList
-            data={data}
-          horizontal
-            showsHorizontalScrollIndicator={false}
-            keyExtractor={(item) => item.id}
-            renderItem={({item})=> (
-                <GameCardHorizontal 
-                  title={item.title}
-                  price={`R$ ${item.price}`}
-                  image={item.cover} // Mapeia 'cover' para a imagem do card
-                  rating={item.rating || 5.0} // Valor padrão caso não tenha nota ainda
-                />
-            ) }
-        />
-    )
+  return (
+    <FlatList
+      data={data}
+      horizontal
+      showsHorizontalScrollIndicator={false}
+      keyExtractor={(item) => item.id}
+      contentContainerStyle={styles.listContent}
+      removeClippedSubviews
+      initialNumToRender={6}
+      windowSize={7}
+      renderItem={({ item }) => (
+        <View style={styles.itemWrap}>
+          <GameCardHorizontal
+            id={item.id} 
+            title={item.title}
+            price={item.price}
+            image={item.cover ?? null}
+            rating={Number(item.rating ?? 0)}
+          />
+        </View>
+      )}
+    />
+  );
 }
+
+const styles = StyleSheet.create({
+  listContent: {
+    paddingRight: 4,
+  },
+  itemWrap: {
+    marginRight: 2,
+  },
+});

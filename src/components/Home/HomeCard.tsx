@@ -1,41 +1,50 @@
-import { StyleSheet, Text, View } from "react-native";
+import type { HomeGame } from "@/src/screens/Home/HomeScreen";
+import { Pressable, StyleSheet, Text, View } from "react-native";
 import GameCardVertical from "./GameCardVertical";
 import GameCarousel from "./GameCarousel";
 
-interface Game {
-    id: string;
-    title: string;
-    cover: string;
-    price: number;
-}
-
-export function HomeCard({ games }: { games: Game[] }) {
-    const ForYouGames = games.slice(0, 3)
-    const moreRentedGames = games.slice(4)
+export function HomeCard({
+    forYou,
+    mostRented,
+    onSeeAll,
+}: {
+    forYou: HomeGame[];
+    mostRented: HomeGame[];
+    onSeeAll: () => void;
+}) {
+    const forYouGames = forYou.slice(0, 3);
+    const mostRentedGames = mostRented.slice(0, 6);
 
     return (
         <View style={styles.card}>
-
             <View style={styles.sectionHeader}>
                 <Text style={styles.sectionTitle}>Para Você</Text>
-                <Text style={styles.seeAll}>Ver tudo</Text>
+
+                <Pressable onPress={onSeeAll} hitSlop={10}>
+                    <Text style={styles.seeAll}>Ver tudo</Text>
+                </Pressable>
             </View>
 
-            <GameCarousel data={ForYouGames} />
+            <GameCarousel data={forYouGames} />
+
             <Text style={styles.sectionTitle}>Mais Alugados</Text>
 
-            {moreRentedGames.map((game) => (
-                <GameCardVertical
-                    key={game.id}
-                    title={game.title}
-                    location="Disponível"
-                    rating={5.0}
-                    image={game.cover} // Usa a imagem vinda da Ludopedia
-                />
-            ))}
-
+            {mostRentedGames.length === 0 ? (
+                <Text style={styles.emptyText}>Ainda não há aluguéis suficientes para montar esse ranking.</Text>
+            ) : (
+                mostRentedGames.map((game) => (
+                    <GameCardVertical
+                        key={game.id}
+                        id={game.id} 
+                        title={game.title}
+                        location={game.isAvailableNow ? "Disponível" : "Indisponível"}
+                        rating={Number(game.rating ?? 0)}
+                        image={game.cover ?? null}
+                    />
+                ))
+            )}
         </View>
-    )
+    );
 }
 
 const styles = StyleSheet.create({
@@ -52,16 +61,23 @@ const styles = StyleSheet.create({
         justifyContent: "space-between",
         alignItems: "center",
         marginBottom: 12,
-
     },
+
     sectionTitle: {
         fontSize: 20,
         fontWeight: "700",
         color: "#333",
         marginVertical: 10,
     },
+
     seeAll: {
-        color: "#4CAF50",
-        fontWeight: "600",
-    }
-})
+        color: "#31358B",
+        fontWeight: "800",
+    },
+
+    emptyText: {
+        color: "#777",
+        fontWeight: "700",
+        marginTop: 6,
+    },
+});

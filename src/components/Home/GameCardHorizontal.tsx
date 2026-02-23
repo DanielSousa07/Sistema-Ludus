@@ -1,36 +1,64 @@
 import { Ionicons } from "@expo/vector-icons";
-import { Image, StyleSheet, Text, View } from "react-native";
+import { useRouter } from "expo-router";
+import { Image, Pressable, StyleSheet, Text, View } from "react-native";
 
 interface GameCardHorizontalProps {
+  id: string; // ✅ necessário
   title: string;
-  price: string;
+  price: number;
   rating: number;
-  image: string;
+  image?: string | null;
+}
+
+function formatBRL(value: number) {
+  return `R$ ${value.toFixed(2).replace(".", ",")}`;
+}
+
+function formatRating(value: number) {
+  return Number.isFinite(value) ? value.toFixed(1) : "0.0";
 }
 
 export default function GameCardHorizontal({
+  id,
   title,
   price,
   rating,
   image,
 }: GameCardHorizontalProps) {
+  const router = useRouter();
+
   return (
-    <View style={styles.card}>
-      <Image source={{ uri: image }} style={styles.image} resizeMode="cover"/>
+    <Pressable
+      onPress={() => router.push(`/game/${id}`)} // ✅ correto
+      style={({ pressed }) => [
+        styles.card,
+        pressed && { opacity: 0.92 },
+      ]}
+    >
+      {image ? (
+        <Image
+          source={{ uri: image }}
+          style={styles.image}
+          resizeMode="cover"
+        />
+      ) : (
+        <View style={[styles.image, styles.imageFallback]} />
+      )}
 
       <View style={styles.rating}>
         <Ionicons name="star" size={14} color="#FFC107" />
-        <Text>{rating}</Text>
+        <Text>{formatRating(rating)}</Text>
       </View>
 
       <View style={styles.footer}>
-        <Text style={styles.title}>{title}</Text>
-        <Text style={styles.price}>{price} / exp</Text>
+        <Text style={styles.title} numberOfLines={2}>
+          {title}
+        </Text>
+        <Text style={styles.price}>{formatBRL(price)} / exp</Text>
       </View>
-    </View>
+    </Pressable>
   );
 }
-
 
 const styles = StyleSheet.create({
   card: {
@@ -47,7 +75,10 @@ const styles = StyleSheet.create({
     height: 250,
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
+    backgroundColor: "#EEE",
   },
+
+  imageFallback: {},
 
   rating: {
     position: "absolute",
@@ -59,6 +90,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     flexDirection: "row",
     gap: 4,
+    alignItems: "center",
   },
 
   footer: {

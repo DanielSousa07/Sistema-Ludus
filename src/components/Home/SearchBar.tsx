@@ -6,14 +6,14 @@ type Props = {
   value: string;
   onChangeText: (text: string) => void;
   onSubmitEditing: () => void;
-  activeFiltersCount?: number; 
+  activeFiltersCount?: number;
 };
 
 export default function SearchBar({
   value,
   onChangeText,
   onSubmitEditing,
-  activeFiltersCount
+  activeFiltersCount,
 }: Props) {
   const router = useRouter();
 
@@ -37,10 +37,11 @@ export default function SearchBar({
         onPress={() => router.push("/filter")}
       >
         <Ionicons name="filter" size={22} color="#31358B" />
+
         {!!activeFiltersCount && activeFiltersCount > 0 && (
           <View style={styles.badge}>
-            <Text>
-                { activeFiltersCount > 9 ? "9+": activeFiltersCount}
+            <Text style={styles.badgetext}>
+              {activeFiltersCount > 9 ? "9+" : activeFiltersCount}
             </Text>
           </View>
         )}
@@ -93,6 +94,7 @@ const styles = StyleSheet.create({
     shadowRadius: 30,
     elevation: 4,
   },
+
   badge: {
     position: "absolute",
     top: 10,
@@ -100,11 +102,12 @@ const styles = StyleSheet.create({
     minWidth: 18,
     height: 18,
     paddingHorizontal: 5,
-    borderRadius:  999,
+    borderRadius: 999,
     backgroundColor: "#E62325",
     alignItems: "center",
     justifyContent: "center",
   },
+
   badgetext: {
     color: "#fff",
     fontSize: 11,

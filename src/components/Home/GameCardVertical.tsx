@@ -1,30 +1,60 @@
 import { Ionicons } from "@expo/vector-icons";
-import { Image, StyleSheet, Text, View } from "react-native";
+import { useRouter } from "expo-router";
+import { Image, Pressable, StyleSheet, Text, View } from "react-native";
+
 interface GameCardVerticalProps {
-    title: string,
-    location: string,
-    rating: number,
-    image: string,
+  id: string; // ✅ precisa do id
+  title: string;
+  location: string;
+  rating: number;
+  image?: string | null;
 }
-export default function GameCardVertical({title, location, rating, image}: GameCardVerticalProps) {
-      return (
-    <View style={styles.card}>
-      <Image source={{ uri: image }} style={styles.image} />
+
+function formatRating(value: number) {
+  return Number.isFinite(value) ? value.toFixed(1) : "0.0";
+}
+
+export default function GameCardVertical({
+  id,
+  title,
+  location,
+  rating,
+  image,
+}: GameCardVerticalProps) {
+  const router = useRouter();
+
+  return (
+    <Pressable
+      style={({ pressed }) => [
+        styles.card,
+        pressed && { opacity: 0.92 },
+      ]}
+      onPress={() => router.push(`/game/${id}`)} // ✅ agora correto
+    >
+      {image ? (
+        <Image source={{ uri: image }} style={styles.image} />
+      ) : (
+        <View style={[styles.image, styles.imageFallback]} />
+      )}
 
       <View style={styles.info}>
-        <Text style={styles.title}>{title}</Text>
+        <Text style={styles.title} numberOfLines={1}>
+          {title}
+        </Text>
 
         <View style={styles.location}>
           <Ionicons name="location-outline" size={14} color="#777" />
-          <Text style={styles.locationText}>{location}</Text>
+          <Text style={styles.locationText} numberOfLines={1}>
+            {location}
+          </Text>
         </View>
       </View>
 
       <View style={styles.rating}>
         <Ionicons name="star" size={14} color="#FFC107" />
-        <Text>{rating}</Text>
+        <Text style={styles.ratingText}>{formatRating(rating)}</Text>
       </View>
-    </View>
+    </Pressable>
   );
 }
 
@@ -43,7 +73,10 @@ const styles = StyleSheet.create({
     width: 60,
     height: 60,
     borderRadius: 12,
+    backgroundColor: "#EEE",
   },
+
+  imageFallback: {},
 
   info: {
     flex: 1,
@@ -51,8 +84,9 @@ const styles = StyleSheet.create({
   },
 
   title: {
-    fontWeight: "700",
+    fontWeight: "800",
     fontSize: 16,
+    color: "#333",
   },
 
   location: {
@@ -65,11 +99,17 @@ const styles = StyleSheet.create({
   locationText: {
     color: "#777",
     fontSize: 14,
+    fontWeight: "700",
   },
 
   rating: {
     flexDirection: "row",
     alignItems: "center",
     gap: 4,
+  },
+
+  ratingText: {
+    fontWeight: "900",
+    color: "#333",
   },
 });
