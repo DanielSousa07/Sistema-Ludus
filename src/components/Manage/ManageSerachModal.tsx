@@ -122,7 +122,7 @@ async function handleAddGame(game: LudopediaGame) {
             </Pressable>
           </View>
 
-          {/* SEARCH */}
+        
           <View style={styles.searchBar}>
             <Ionicons name="search" size={20} color="#535353" />
             <TextInput

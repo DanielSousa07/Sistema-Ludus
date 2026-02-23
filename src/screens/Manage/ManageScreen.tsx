@@ -22,6 +22,7 @@ export default function ManageScreen() {
         <ManageGrid  
         onAddGamePress={() => setModalVisible(true)}
         onEditGamesPress={() => router.push("/admin/edit-games")}
+        onManageCopiesPress={() => router.push("/admin/copies")}
         />
         
           <ManageSearchModal
