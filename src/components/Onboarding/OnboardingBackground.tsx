@@ -4,13 +4,13 @@ export function OnboardingBackground() {
   return (
     <View style={StyleSheet.absoluteFill}>
       <View style={styles.base} />
-      {/* Topo direito */}
+      
       <View style={[styles.circle, styles.topSolid]} />
       <View style={[styles.circle, styles.topLight]} />
       <View style={[styles.circle, styles.topBlur]} />
       <View style={[styles.circle, styles.topDashed]} />
 
-      {/* Inferior esquerdo */}
+      
       <View style={[styles.circle, styles.bottomLight]} />
       <View style={[styles.circle, styles.bottomDashed]} />
     </View>

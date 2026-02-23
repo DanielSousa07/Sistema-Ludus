@@ -3,7 +3,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
 
 export function Header() {
-  const { user } = useAuth();
+  const { user, logout } = useAuth();
 
   const firstName = user?.nome ? user.nome.split(" ")[0] : "Visitante";
   const notificationsCount = 0; 
@@ -26,7 +26,7 @@ export function Header() {
         <Ionicons name="notifications" size={22} color="#31358B" />
 
         {notificationsCount > 0 && (
-          <View style={styles.badge}>
+          <View style={styles.badge} >
             <Text style={styles.badgeText}>
               {notificationsCount > 9 ? "9+" : notificationsCount}
             </Text>

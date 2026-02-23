@@ -114,7 +114,7 @@ async function handleAddGame(game: LudopediaGame) {
     <Modal visible={visible} animationType="slide" transparent>
       <View style={styles.overlay}>
         <View style={styles.container}>
-          {/* HEADER */}
+          
           <View style={styles.header}>
             <Text style={styles.title}>Buscar na Ludopedia</Text>
             <Pressable onPress={onClose}>

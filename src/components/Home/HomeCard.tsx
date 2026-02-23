@@ -71,8 +71,9 @@ const styles = StyleSheet.create({
     },
 
     seeAll: {
-        color: "#31358B",
+        color: "#4CAF50",
         fontWeight: "800",
+        fontSize: 15
     },
 
     emptyText: {

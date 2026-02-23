@@ -1,5 +1,5 @@
 import { NavFooter } from "@/src/components/common/NavFooter";
-import { FilterButtons } from "@/src/components/Home/FilterButtons";
+import { EngagementPreview } from "@/src/components/Home/EngagementPreview";
 import { Header } from "@/src/components/Home/Header";
 import { HomeCard } from "@/src/components/Home/HomeCard";
 import SearchBar from "@/src/components/Home/SearchBar";
@@ -32,7 +32,7 @@ export type HomeGame = {
   copiesCount?: number;
   availableCopiesCount?: number;
 
-  isAvailableNow?: boolean; // ✅ calculado no backend
+  isAvailableNow?: boolean; 
 };
 
 type HomePayload = {
@@ -83,13 +83,13 @@ export default function HomeScreen() {
 
   return (
     <View style={{ flex: 1 }}>
-      <HomeBackground />
 
       <ScrollView
         contentContainerStyle={{ paddingBottom: 65 }}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
         showsVerticalScrollIndicator={false}
       >
+      <HomeBackground />
         <Header />
 
         <SearchBar
@@ -107,7 +107,7 @@ export default function HomeScreen() {
           activeFiltersCount={activeCount}
         />
 
-        <FilterButtons />
+        <EngagementPreview/>
 
         {loading ? (
           <View style={{ paddingTop: 30, alignItems: "center" }}>

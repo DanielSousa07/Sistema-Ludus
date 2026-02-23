@@ -3,12 +3,12 @@ import { StyleSheet, View } from "react-native";
 export default function HomeBackground() {
   return (
     <View style={styles.container}>
-      {/* Círculos superiores */}
+      
       <View style={styles.circleLightTop} />
       <View style={styles.circleGradientTop} />
       <View style={styles.circleDashed} />
 
-      {/* Círculos laterais */}
+      
       <View style={styles.circleSideLight} />
       <View style={styles.circleSideGradient} />
     </View>

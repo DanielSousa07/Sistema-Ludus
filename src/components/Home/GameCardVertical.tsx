@@ -3,7 +3,7 @@ import { useRouter } from "expo-router";
 import { Image, Pressable, StyleSheet, Text, View } from "react-native";
 
 interface GameCardVerticalProps {
-  id: string; // ✅ precisa do id
+  id: string; 
   title: string;
   location: string;
   rating: number;
@@ -29,7 +29,7 @@ export default function GameCardVertical({
         styles.card,
         pressed && { opacity: 0.92 },
       ]}
-      onPress={() => router.push(`/game/${id}`)} // ✅ agora correto
+      onPress={() => router.push(`/game/${id}`)}
     >
       {image ? (
         <Image source={{ uri: image }} style={styles.image} />

@@ -1,4 +1,3 @@
-import { useRouter } from "expo-router";
 import { FlatList, StyleSheet, View } from "react-native";
 import GameCardHorizontal from "./GameCardHorizontal";
 
@@ -12,7 +11,7 @@ export interface ForYouGame {
 }
 
 export default function GameCarousel({ data }: { data: ForYouGame[] }) {
-  const router = useRouter();
+  
 
   return (
     <FlatList

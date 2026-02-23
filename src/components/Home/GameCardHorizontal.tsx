@@ -29,7 +29,7 @@ export default function GameCardHorizontal({
 
   return (
     <Pressable
-      onPress={() => router.push(`/game/${id}`)} // ✅ correto
+      onPress={() => router.push(`/game/${id}`)} 
       style={({ pressed }) => [
         styles.card,
         pressed && { opacity: 0.92 },
@@ -54,7 +54,7 @@ export default function GameCardHorizontal({
         <Text style={styles.title} numberOfLines={2}>
           {title}
         </Text>
-        <Text style={styles.price}>{formatBRL(price)} / exp</Text>
+        <Text style={styles.price}>{formatBRL(price)} / dia</Text>
       </View>
     </Pressable>
   );
