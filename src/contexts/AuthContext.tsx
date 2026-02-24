@@ -6,25 +6,41 @@ type Role = "USER" | "ADMIN" | string;
 
 export type AuthUser = {
   id: string;
-  nome?: string;      
-  name?: string;      
+  nome?: string; 
+  name?: string; 
   email: string;
   phone?: string | null;
   role?: Role;
+
   phoneVerified?: boolean;
   emailVerified?: boolean;
+
+  points?: number;
+  level?: number;
+  authProvider?: string;
 };
 
 type AuthResult =
   | { success: true }
   | { success: false; message: string };
 
+type GoogleAuthResult =
+  | { success: true; needsPhoneVerification: boolean }
+  | { success: false; message: string };
+
 type AuthContextValue = {
   user: AuthUser | null;
   isLoading: boolean;
+
   login: (emailOrPhone: string, senha: string) => Promise<AuthResult>;
   register: (name: string, email: string, phone: string, senha: string) => Promise<AuthResult>;
   logout: () => Promise<void>;
+
+  
+  signInWithToken: (token: string, userData: AuthUser) => Promise<void>;
+
+  
+  loginGoogle: (idToken: string) => Promise<GoogleAuthResult>;
 };
 
 const AuthContext = createContext<AuthContextValue>({} as AuthContextValue);
@@ -56,6 +72,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     loadStorageData();
   }, []);
 
+  async function signInWithToken(token: string, userData: AuthUser) {
+    api.defaults.headers.common["Authorization"] = `Bearer ${token}`;
+
+    await SecureStore.setItemAsync("token", token);
+    await SecureStore.setItemAsync("user", JSON.stringify(userData));
+
+    setUser(userData);
+  }
+
   async function login(emailOrPhone: string, senha: string): Promise<AuthResult> {
     try {
       const response = await api.post("/auth/login", {
@@ -68,13 +93,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         user: AuthUser;
       };
 
-      
-      api.defaults.headers.common["Authorization"] = `Bearer ${token}`;
-
-      await SecureStore.setItemAsync("token", token);
-      await SecureStore.setItemAsync("user", JSON.stringify(userData));
-
-      setUser(userData);
+      await signInWithToken(token, userData);
       return { success: true };
     } catch (error: any) {
       let message = "Erro ao conectar com o servidor";
@@ -97,7 +116,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       await api.post("/auth/register", { name, email, phone, senha });
 
-      
+      // login automático (continua igual)
       const loginResult = await login(email, senha);
 
       if (loginResult.success) {
@@ -109,8 +128,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         message: "Conta criada, mas não foi possível fazer login automaticamente.",
       };
     } catch (error: any) {
-      const errorMessage =
-        error?.response?.data?.error || "Erro ao conectar com o servidor";
+      const errorMessage = error?.response?.data?.error || "Erro ao conectar com o servidor";
       console.error("Erro no registro:", errorMessage);
 
       return {
@@ -120,18 +138,47 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }
 
+  
+  async function loginGoogle(idToken: string): Promise<GoogleAuthResult> {
+    try {
+      const res = await api.post("/auth/google", { idToken });
+
+      const { token, user: userData, needsPhoneVerification } = res.data as {
+        token: string;
+        user: AuthUser;
+        needsPhoneVerification: boolean;
+      };
+
+      await signInWithToken(token, userData);
+
+      return { success: true, needsPhoneVerification: !!needsPhoneVerification };
+    } catch (error: any) {
+      const message =
+        error?.response?.data?.error || "Falha ao autenticar com Google.";
+
+      console.error("Erro no loginGoogle:", message);
+      return { success: false, message };
+    }
+  }
+
   async function logout() {
     await SecureStore.deleteItemAsync("token");
     await SecureStore.deleteItemAsync("user");
 
-    // ✅ limpa header também
     delete api.defaults.headers.common["Authorization"];
-
     setUser(null);
   }
 
   const value = useMemo(
-    () => ({ user, login, logout, register, isLoading }),
+    () => ({
+      user,
+      login,
+      logout,
+      register,
+      isLoading,
+      signInWithToken,
+      loginGoogle,
+    }),
     [user, isLoading]
   );
 

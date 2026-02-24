@@ -1,3 +1,4 @@
+import { useAuth } from "@/src/contexts/AuthContext";
 import type { HomeGame } from "@/src/screens/Home/HomeScreen";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import GameCardVertical from "./GameCardVertical";
@@ -14,13 +15,14 @@ export function HomeCard({
 }) {
     const forYouGames = forYou.slice(0, 3);
     const mostRentedGames = mostRented.slice(0, 6);
+    const {logout} = useAuth()
 
     return (
         <View style={styles.card}>
             <View style={styles.sectionHeader}>
                 <Text style={styles.sectionTitle}>Para Você</Text>
 
-                <Pressable onPress={onSeeAll} hitSlop={10}>
+                <Pressable onPress={() => logout()} hitSlop={10}>
                     <Text style={styles.seeAll}>Ver tudo</Text>
                 </Pressable>
             </View>

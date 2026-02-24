@@ -13,7 +13,7 @@ export function Header() {
       <View>
         <Text style={styles.hello}>Olá,</Text>
         <Text style={styles.name}>{firstName}!</Text>
-        <Text style={styles.TextSearch}>Procure o Jogo!</Text>
+        <Text style={styles.TextSearch}>Alugue seus jogos ideais!</Text>
       </View>
 
       <TouchableOpacity

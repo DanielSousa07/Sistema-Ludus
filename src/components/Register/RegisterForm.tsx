@@ -1,6 +1,12 @@
+import { useAuth } from "@/src/contexts/AuthContext";
+import { api } from "@/src/services/api";
 import { Ionicons } from "@expo/vector-icons";
+import * as AuthSession from "expo-auth-session";
+import * as Google from "expo-auth-session/providers/google";
 import { useRouter } from "expo-router";
-import { useMemo, useRef, useState } from "react";
+import * as WebBrowser from "expo-web-browser";
+import { useEffect, useMemo, useRef, useState } from "react";
+
 import {
   Image,
   KeyboardAvoidingView,
@@ -11,10 +17,11 @@ import {
   TextInput,
   View,
 } from "react-native";
-
-import { useAuth } from "@/src/contexts/AuthContext";
 import LudusAlert from "../common/LudusAlert/LudusAlert";
 import { styles } from "./styles";
+
+
+WebBrowser.maybeCompleteAuthSession();
 
 type AlertType = "error" | "success" | "info";
 
@@ -29,7 +36,7 @@ const formatBRPhone = (raw: string) => {
 
 export default function RegisterForm() {
   const router = useRouter();
-  const { register } = useAuth();
+  const { register, signInWithToken } = useAuth();
 
   const [hidePassword, setHidePassword] = useState(true);
   const [hideConfirm, setHideConfirm] = useState(true);
@@ -41,6 +48,18 @@ export default function RegisterForm() {
   const [confirm, setConfirm] = useState("");
 
   const [loading, setLoading] = useState(false);
+  const [googleLoading, setGoogleLoading] = useState(false);
+
+
+  const redirectUri = AuthSession.makeRedirectUri({ scheme: "ludus" });
+  const [request, response, promptAsync] = Google.useAuthRequest(
+    {
+      clientId: process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID,
+      scopes: ["openid", "profile", "email"],
+      responseType: "id_token",
+    },
+
+  );
 
   const [alertVisible, setAlertVisible] = useState(false);
   const [alertType, setAlertType] = useState<AlertType>("info");
@@ -67,7 +86,7 @@ export default function RegisterForm() {
 
   const cleanPhone = useMemo(() => phone.replace(/\D/g, ""), [phone]);
 
-  
+
   const passwordError =
     touched.password && password.length > 0 && password.length < 6
       ? "Use pelo menos 6 caracteres."
@@ -77,6 +96,52 @@ export default function RegisterForm() {
     touched.confirm && confirm.length > 0 && confirm !== password
       ? "A confirmação não confere."
       : "";
+
+  const googleLock = useRef(false);
+
+  useEffect(() => {
+    if (response?.type !== "success") return;
+    if (googleLock.current) return;
+    googleLock.current = true;
+
+    const idToken = (response as any)?.params?.id_token as string | undefined;
+
+    if (!idToken) {
+      googleLock.current = false;
+      showAlert("error", "Erro", "Não foi possível obter token do Google.");
+      return;
+    }
+
+    (async () => {
+      setGoogleLoading(true);
+      try {
+        const res = await api.post("/auth/google", { idToken });
+        await signInWithToken(res.data.token, res.data.user);
+
+        showAlert("success", "Tudo certo ✅", "Você entrou com Google.");
+
+        setTimeout(() => {
+          setAlertVisible(false);
+          if (res.data.needsPhoneVerification) {
+            router.replace({
+              pathname: "/verify",
+              params: { email: res.data.user.email, phone: res.data.user.phone ?? "" },
+            });
+          } else {
+            router.replace("/home");
+          }
+        }, 900);
+      } catch (e: any) {
+        console.error("Google login error:", e);
+        const msg = e?.response?.data?.error || "Falha ao autenticar com Google. Tente novamente.";
+        showAlert("error", "Erro", msg);
+        googleLock.current = false;
+      } finally {
+        setGoogleLoading(false);
+      }
+    })();
+  }, [response]);
+
 
   const handleRegister = async () => {
     const cleanName = name.trim();
@@ -128,7 +193,7 @@ export default function RegisterForm() {
           setAlertVisible(false);
           router.push({
             pathname: "/verify",
-            params: { email: cleanEmail ,phone: cleanPhoneDigits},
+            params: { email: cleanEmail, phone: cleanPhoneDigits },
           });
         }, 1200);
       } else {
@@ -141,7 +206,7 @@ export default function RegisterForm() {
     }
   };
 
-  
+
   const Wrapper: any = Platform.OS === "ios" ? KeyboardAvoidingView : View;
   const wrapperProps =
     Platform.OS === "ios"
@@ -152,7 +217,7 @@ export default function RegisterForm() {
     <View style={styles.container}>
       <Wrapper style={{ flex: 1 }} {...wrapperProps}>
         <ScrollView
-        style={{ flex: 1 }}
+          style={{ flex: 1 }}
           showsVerticalScrollIndicator={false}
           contentContainerStyle={styles.scroll}
           keyboardShouldPersistTaps="handled"
@@ -228,7 +293,7 @@ export default function RegisterForm() {
               value={password}
               onChangeText={(t) => {
                 setPassword(t);
-                // se o usuário já tocou, atualiza ao digitar
+
                 if (!touched.password) return;
               }}
               onBlur={() => setTouched((t) => ({ ...t, password: true }))}
@@ -302,9 +367,15 @@ export default function RegisterForm() {
             <View style={styles.line} />
           </View>
 
-          <Pressable style={styles.googleButton}>
+          <Pressable
+            style={[styles.googleButton, (googleLoading || loading) && { opacity: 0.7 }]}
+            disabled={!request || googleLoading || loading}
+            onPress={() => promptAsync()}
+          >
             <Ionicons name="logo-google" size={22} color="#0409CE" />
-            <Text style={styles.googleText}>Cadastrar com Google</Text>
+            <Text style={styles.googleText}>
+              {googleLoading ? "Conectando..." : "Cadastrar com Google"}
+            </Text>
           </Pressable>
 
           <Text style={styles.register}>

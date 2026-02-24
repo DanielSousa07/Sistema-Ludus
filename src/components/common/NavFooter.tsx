@@ -6,7 +6,7 @@ import { StyleSheet, TouchableOpacity, View } from "react-native";
 export function NavFooter() {
     const router = useRouter()
     const pathName = usePathname();
-    const { user } = useAuth();
+    const { user, logout} = useAuth();
 
     function getColor(route: string) {
         return pathName.startsWith(route) ? "#FBBC04" : "#DDD"
@@ -21,7 +21,7 @@ export function NavFooter() {
                 <Ionicons name="bookmark" size={26} color={getColor("/favorites")}></Ionicons>
             </TouchableOpacity>
 
-            <TouchableOpacity>
+            <TouchableOpacity onPress={() => logout()}>
                 <Ionicons name="person" size={26} color="#DDD"></Ionicons>
             </TouchableOpacity>
 
