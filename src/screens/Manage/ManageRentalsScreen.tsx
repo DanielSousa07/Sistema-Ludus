@@ -8,13 +8,13 @@ import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
-    ActivityIndicator,
-    FlatList,
-    Pressable,
-    StyleSheet,
-    Text,
-    TextInput,
-    View,
+  ActivityIndicator,
+  FlatList,
+  Pressable,
+  StyleSheet,
+  Text,
+  TextInput,
+  View,
 } from "react-native";
 
 type RentalStatus = "PENDING" | "ACTIVE" | "RETURNED" | "CANCELED";
@@ -159,6 +159,7 @@ export default function ManageRentalsScreen() {
           <TextInput
             style={styles.input}
             placeholder="Buscar por jogo, aluno, email, exemplar..."
+            placeholderTextColor="#333"
             value={q}
             onChangeText={setQ}
             returnKeyType="search"

@@ -53,6 +53,7 @@ export const styles = StyleSheet.create({
   inputPassword: {
     flex: 1,
     paddingVertical: 16,
+    color: "#333"
   },
 
   eye: {

@@ -6,12 +6,12 @@ import SearchBar from "@/src/components/Home/SearchBar";
 import { useFilters } from "@/src/contexts/FiltersContext";
 import { api } from "@/src/services/api";
 import { useRouter } from "expo-router";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import {
   ActivityIndicator,
-  Animated,
   Keyboard,
   RefreshControl,
+  ScrollView,
   StyleSheet,
   Text,
   View,
@@ -27,7 +27,7 @@ export type HomeGame = {
   rating?: number | null;
   ratingsCount?: number | null;
 
-  available?: boolean; // original
+  available?: boolean;
   allowOriginalRental?: boolean;
 
   copiesCount?: number;
@@ -53,9 +53,6 @@ export default function HomeScreen() {
   const [errMsg, setErrMsg] = useState<string | null>(null);
 
   const { activeCount } = useFilters();
-
-  
-  const scrollY = useRef(new Animated.Value(0)).current;
 
   const loadHome = useCallback(async () => {
     setErrMsg(null);
@@ -95,60 +92,29 @@ export default function HomeScreen() {
     });
   }, [router, search]);
 
-  
-  const topOpacity = scrollY.interpolate({
-    inputRange: [0, 70],
-    outputRange: [1, 0],
-    extrapolate: "clamp",
-  });
-
-  const topTranslate = scrollY.interpolate({
-    inputRange: [0, 70],
-    outputRange: [0, -16],
-    extrapolate: "clamp",
-  });
-
   return (
     <View style={{ flex: 1 }}>
-      <Animated.ScrollView
+      <HomeBackground />
+
+      <ScrollView
         contentContainerStyle={{ paddingBottom: 65 }}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
         showsVerticalScrollIndicator={false}
-        stickyHeaderIndices={[2]} 
-        scrollEventThrottle={16}
-        onScroll={Animated.event(
-          [{ nativeEvent: { contentOffset: { y: scrollY } } }],
-          { useNativeDriver: true }
-        )}
       >
-        <HomeBackground />
-        
-
-        
-        <Animated.View
-          style={[
-            styles.topBlock,
-            {
-              opacity: topOpacity,
-              transform: [{ translateY: topTranslate }],
-            },
-          ]}
-        >
+        <View style={styles.topBlock}>
           <Header />
           <EngagementPreview />
-        </Animated.View>
-
-        
-        <View style={styles.stickySearchWrap}>
-          <SearchBar
-            value={search}
-            onChangeText={setSearch}
-            onSubmitEditing={onSubmitSearch}
-            activeFiltersCount={activeCount}
-          />
+          <View style={styles.searchWrap}>
+            <SearchBar
+              value={search}
+              onChangeText={setSearch}
+              onSubmitEditing={onSubmitSearch}
+              activeFiltersCount={activeCount}
+            />
+          </View>
         </View>
 
-        
+
         {loading ? (
           <View style={{ paddingTop: 30, alignItems: "center" }}>
             <ActivityIndicator size="large" />
@@ -171,9 +137,13 @@ export default function HomeScreen() {
             </Text>
           </View>
         ) : (
-          <HomeCard forYou={forYou} mostRented={mostRented} onSeeAll={() => router.push("/search")} />
+          <HomeCard
+            forYou={forYou}
+            mostRented={mostRented}
+            onSeeAll={() => router.push("/search")}
+          />
         )}
-      </Animated.ScrollView>
+      </ScrollView>
 
       <NavFooter />
     </View>
@@ -182,13 +152,10 @@ export default function HomeScreen() {
 
 const styles = StyleSheet.create({
   topBlock: {
-
     paddingBottom: 6,
   },
-
-  
-  stickySearchWrap: {
-    backgroundColor: "transparent", 
+  searchWrap: {
+    backgroundColor: "transparent",
     paddingBottom: 6,
   },
 });

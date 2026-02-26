@@ -5,13 +5,13 @@ import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { useEffect, useMemo, useState } from "react";
 import {
-    ActivityIndicator,
-    FlatList,
-    Pressable,
-    StyleSheet,
-    Text,
-    TextInput,
-    View,
+  ActivityIndicator,
+  FlatList,
+  Pressable,
+  StyleSheet,
+  Text,
+  TextInput,
+  View,
 } from "react-native";
 
 import { ManageCopiesModal } from "@/src/components/Manage/Copies/ManageCopiesModal";
@@ -73,6 +73,7 @@ export default function CopiesScreen() {
           <TextInput
             style={styles.input}
             placeholder="Buscar jogo..."
+            placeholderTextColor="#333"
             value={q}
             onChangeText={setQ}
           />

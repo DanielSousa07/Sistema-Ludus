@@ -128,6 +128,7 @@ async function handleAddGame(game: LudopediaGame) {
             <TextInput
               style={styles.input}
               placeholder="Nome do jogo..."
+              placeholderTextColor="#333"
               value={search}
               onChangeText={setSearch}
               onSubmitEditing={handleSearch}
