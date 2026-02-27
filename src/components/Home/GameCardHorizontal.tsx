@@ -3,7 +3,7 @@ import { useRouter } from "expo-router";
 import { Image, Pressable, StyleSheet, Text, View } from "react-native";
 
 interface GameCardHorizontalProps {
-  id: string; // ✅ necessário
+  id: string;
   title: string;
   price: number;
   rating: number;
@@ -18,6 +18,15 @@ function formatRating(value: number) {
   return Number.isFinite(value) ? value.toFixed(1) : "0.0";
 }
 
+function getHighResImage(url?: string | null) {
+  if (!url) return null;
+
+  return url
+    .replace("_t.jpg", ".jpg")
+    .replace("_t.jpeg", ".jpeg")
+    .replace("_t.png", ".png");
+}
+
 export default function GameCardHorizontal({
   id,
   title,
@@ -27,19 +36,20 @@ export default function GameCardHorizontal({
 }: GameCardHorizontalProps) {
   const router = useRouter();
 
+  const img = getHighResImage(image) ?? image ?? null;
+
   return (
     <Pressable
-      onPress={() => router.push(`/game/${id}`)} 
-      style={({ pressed }) => [
-        styles.card,
-        pressed && { opacity: 0.92 },
-      ]}
+      onPress={() => router.push({ pathname: "/game/[id]", params: { id } })}
+      style={({ pressed }) => [styles.card, pressed && { opacity: 0.92 }]}
     >
-      {image ? (
+      {img ? (
         <Image
-          source={{ uri: image }}
+          source={{ uri: img }}
           style={styles.image}
           resizeMode="cover"
+          fadeDuration={200}
+          progressiveRenderingEnabled
         />
       ) : (
         <View style={[styles.image, styles.imageFallback]} />
@@ -47,7 +57,7 @@ export default function GameCardHorizontal({
 
       <View style={styles.rating}>
         <Ionicons name="star" size={14} color="#FFC107" />
-        <Text>{formatRating(rating)}</Text>
+        <Text style={styles.ratingText}>{formatRating(rating)}</Text>
       </View>
 
       <View style={styles.footer}>
@@ -62,19 +72,18 @@ export default function GameCardHorizontal({
 
 const styles = StyleSheet.create({
   card: {
-    width: 200,
+    width: 180,
     marginRight: 16,
     marginBottom: 6,
     borderRadius: 20,
     backgroundColor: "#fff",
     elevation: 3,
+    overflow: "hidden", 
   },
 
   image: {
     width: "100%",
-    height: 250,
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
+    aspectRatio: 3 / 4,
     backgroundColor: "#EEE",
   },
 
@@ -86,11 +95,16 @@ const styles = StyleSheet.create({
     right: 10,
     backgroundColor: "#fff",
     paddingHorizontal: 8,
-    paddingVertical: 4,
+    height: 28,
     borderRadius: 12,
     flexDirection: "row",
     gap: 4,
     alignItems: "center",
+  },
+
+  ratingText: {
+    fontWeight: "800",
+    color: "#333",
   },
 
   footer: {
@@ -98,13 +112,14 @@ const styles = StyleSheet.create({
   },
 
   title: {
-    fontWeight: "700",
+    fontWeight: "800",
     fontSize: 16,
+    color: "#333",
   },
 
   price: {
-    color: "#4CAF50",
-    fontWeight: "700",
+    color: "#2FA84F",
+    fontWeight: "800",
     marginTop: 4,
   },
 });

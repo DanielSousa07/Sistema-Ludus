@@ -50,7 +50,7 @@ type AlertType = "error" | "success" | "info";
 export default function GameDetailsScreen() {
 
   const router = useRouter()
-  
+
   const params = useLocalSearchParams();
   const id = useMemo(
     () => (Array.isArray(params.id) ? params.id[0] : String(params.id)),
@@ -74,6 +74,7 @@ export default function GameDetailsScreen() {
   const [rateOpen, setRateOpen] = useState(false);
   const [savingRate, setSavingRate] = useState(false);
 
+  const [canRate, setCanRate] = useState(false);
 
   const [alertVisible, setAlertVisible] = useState(false);
   const [alertType, setAlertType] = useState<AlertType>("info");
@@ -146,11 +147,30 @@ export default function GameDetailsScreen() {
       setRateOpen(false);
       showAlert("success", "Avaliação salva!", "Sua avaliação foi registrada com sucesso.");
     } catch (e: any) {
-      showAlert("error", "Erro", "Não foi possível salvar sua avaliação. Tente novamente.");
-    } finally {
-      setSavingRate(false);
-    }
+  const code = e?.response?.data?.code;
+  const msg = e?.response?.data?.error;
+
+  if (code === "CANNOT_RATE") {
+    setCanRate(false);
+    showAlert(
+      "info",
+      "Avaliação bloqueada",
+      "Você só pode avaliar este jogo após devolver."
+    );
+    return;
+  }
+
+  showAlert("error", "Erro", msg || "Não foi possível salvar sua avaliação. Tente novamente.");
+}
   };
+
+  useEffect(() => {
+    if (!game?.id) return;
+
+    api.get(`/games/${game.id}/can-rate`)
+      .then(res => setCanRate(res.data.canRate))
+      .catch(() => setCanRate(false));
+  }, [game?.id]);
 
   const addDaysISO = (days: number) => {
     const d = new Date();
@@ -331,7 +351,17 @@ export default function GameDetailsScreen() {
                 title={game.title}
                 avgRating={avgRating}
                 ratingsCount={game.ratingsCount}
-                onPressRate={() => setRateOpen(true)}
+                onPressRate={() => {
+                  if (!canRate) {
+                    showAlert(
+                      "info",
+                      "Avaliação bloqueada",
+                      "Você só pode avaliar este jogo após alugar e marcar como devolvido."
+                    );
+                    return;
+                  }
+                  setRateOpen(true);
+                }}
               />
 
               <GameFactsRow players={playersText} time={timeText} age={ageText} />
@@ -410,29 +440,29 @@ const styles = StyleSheet.create({
   },
   center: { flex: 1, alignItems: "center", justifyContent: "center", backgroundColor: "#fff" },
   toast: {
-  position: "absolute",
-  bottom: 100, // acima do NavFooter
-  left: 20,
-  right: 20,
-  backgroundColor: "#1F1F1F",
-  paddingVertical: 14,
-  paddingHorizontal: 18,
-  borderRadius: 16,
-  flexDirection: "row",
-  justifyContent: "space-between",
-  alignItems: "center",
-  elevation: 8,
-},
+    position: "absolute",
+    bottom: 100, // acima do NavFooter
+    left: 20,
+    right: 20,
+    backgroundColor: "#1F1F1F",
+    paddingVertical: 14,
+    paddingHorizontal: 18,
+    borderRadius: 16,
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    elevation: 8,
+  },
 
-toastText: {
-  color: "#FFF",
-  fontWeight: "700",
-  fontSize: 14,
-},
+  toastText: {
+    color: "#FFF",
+    fontWeight: "700",
+    fontSize: 14,
+  },
 
-toastAction: {
-  color: "#FBBC04",
-  fontWeight: "900",
-  fontSize: 14,
-},
+  toastAction: {
+    color: "#FBBC04",
+    fontWeight: "900",
+    fontSize: 14,
+  },
 });

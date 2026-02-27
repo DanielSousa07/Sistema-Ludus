@@ -1,7 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { Image, Pressable, StyleSheet, View } from "react-native";
-
 type Props = {
   gameId: string;
   coverUrl?: string | null;
@@ -15,18 +14,23 @@ export function GameHero({
   onToggleFavorite,
 }: Props) {
   const router = useRouter();
-  
-return (
+
+  function getHighResImage(url?: string | null) {
+  if (!url) return null;
+  return url.replace("_t.jpg", ".jpg");
+}
+
+  return (
     <View style={styles.wrap}>
       <Image
-        source={{
-          uri:
-            coverUrl ||
-            "https://via.placeholder.com/600x400.png?text=Ludus",
-        }}
-        style={styles.image}
-        resizeMode="cover"
-      />
+  source={{
+    uri:
+      getHighResImage(coverUrl) ||
+      "https://via.placeholder.com/600x400.png?text=Ludus",
+  }}
+  style={styles.image}
+  resizeMode="cover"
+/>
 
       <Pressable onPress={() => router.back()} style={styles.backBtn}>
         <Ionicons name="chevron-back" size={22} color="#fff" />
@@ -43,7 +47,7 @@ return (
   );
 }
 const styles = StyleSheet.create({
-  wrap: { height: 320, width: "100%" },
+  wrap: { width: "100%", aspectRatio: 3 / 2.7 },
   image: { width: "100%", height: "100%" },
   backBtn: {
     position: "absolute",
