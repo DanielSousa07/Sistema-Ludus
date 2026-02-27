@@ -3,16 +3,27 @@ import { useRouter } from "expo-router";
 import { Image, Pressable, StyleSheet, View } from "react-native";
 
 type Props = {
+  gameId: string;
   coverUrl?: string | null;
+  isFavorite: boolean;
+  onToggleFavorite: () => void;
 };
 
-export function GameHero({ coverUrl }: Props) {
+export function GameHero({
+  coverUrl,
+  isFavorite,
+  onToggleFavorite,
+}: Props) {
   const router = useRouter();
-
-  return (
+  
+return (
     <View style={styles.wrap}>
       <Image
-        source={{ uri: coverUrl || "https://via.placeholder.com/600x400.png?text=Ludus" }}
+        source={{
+          uri:
+            coverUrl ||
+            "https://via.placeholder.com/600x400.png?text=Ludus",
+        }}
         style={styles.image}
         resizeMode="cover"
       />
@@ -21,13 +32,16 @@ export function GameHero({ coverUrl }: Props) {
         <Ionicons name="chevron-back" size={22} color="#fff" />
       </Pressable>
 
-      <Pressable onPress={() => {}} style={styles.bookmarkBtn}>
-        <Ionicons name="bookmark-outline" size={20} color="#fff" />
+      <Pressable onPress={onToggleFavorite} style={styles.bookmarkBtn}>
+        <Ionicons
+          name={isFavorite ? "bookmark" : "bookmark-outline"}
+          size={22}
+          color={isFavorite ? "#FBBC04" : "#fff"}
+        />
       </Pressable>
     </View>
   );
 }
-
 const styles = StyleSheet.create({
   wrap: { height: 320, width: "100%" },
   image: { width: "100%", height: "100%" },

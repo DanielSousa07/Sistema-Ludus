@@ -1,7 +1,7 @@
 import { api } from "@/src/services/api";
-import { useLocalSearchParams } from "expo-router";
+import { useLocalSearchParams, useRouter } from "expo-router";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { ActivityIndicator, ScrollView, StyleSheet, Text, View } from "react-native";
+import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 
 import { BottomBar } from "@/src/components/GameDetails/BottomBar";
 import { GameDescription } from "@/src/components/GameDetails/GameDescription";
@@ -48,11 +48,20 @@ type Copy = {
 type AlertType = "error" | "success" | "info";
 
 export default function GameDetailsScreen() {
+
+  const router = useRouter()
+  
   const params = useLocalSearchParams();
   const id = useMemo(
     () => (Array.isArray(params.id) ? params.id[0] : String(params.id)),
     [params.id]
   );
+
+  const [isFavorite, setIsFavorite] = useState(false);
+  const [favLoading, setFavLoading] = useState(false);
+  const [favSaving, setFavSaving] = useState(false);
+  const [favToastVisible, setFavToastVisible] = useState(false);
+  const [favToastMessage, setFavToastMessage] = useState("");
 
   const [game, setGame] = useState<GameDetails | null>(null);
   const [loading, setLoading] = useState(true);
@@ -102,17 +111,17 @@ export default function GameDetailsScreen() {
     game?.minPlayers && game?.maxPlayers
       ? `${game.minPlayers}-${game.maxPlayers} jogadores`
       : game?.minPlayers
-      ? `${game.minPlayers}+ jogadores`
-      : "—";
+        ? `${game.minPlayers}+ jogadores`
+        : "—";
 
   const timeText =
     game?.minTime && game?.maxTime
       ? `${game.minTime}-${game.maxTime} min`
       : game?.maxTime
-      ? `${game.maxTime} min`
-      : game?.minTime
-      ? `${game.minTime} min`
-      : "—";
+        ? `${game.maxTime} min`
+        : game?.minTime
+          ? `${game.minTime} min`
+          : "—";
 
   const ageText = game?.minAge ? `${game.minAge}+ anos` : "—";
 
@@ -126,11 +135,11 @@ export default function GameDetailsScreen() {
       setGame((prev) =>
         prev
           ? {
-              ...prev,
-              rating: res.data?.avgRating ?? prev.rating,
-              ratingsCount: res.data?.ratingsCount ?? prev.ratingsCount,
-              myRating: res.data?.myRating ?? value,
-            }
+            ...prev,
+            rating: res.data?.avgRating ?? prev.rating,
+            ratingsCount: res.data?.ratingsCount ?? prev.ratingsCount,
+            myRating: res.data?.myRating ?? value,
+          }
           : prev
       );
 
@@ -166,7 +175,7 @@ export default function GameDetailsScreen() {
       const msg = e?.response?.data?.error;
 
       if (code === "ONLY_COPIES_ALLOWED") {
-        
+
         setRentOpen(true);
         showAlert(
           "info",
@@ -223,18 +232,18 @@ export default function GameDetailsScreen() {
 
     setRentLoading(true);
     try {
-      
+
       const res = await api.get(`/games/${game.id}/copies/available`);
       const copies: Copy[] = res.data || [];
       setAvailableCopies(copies);
 
-      
+
       if (copies.length === 0) {
         await rentOriginalNow();
         return;
       }
 
-      
+
       setRentOpen(true);
     } catch (e: any) {
       showAlert("error", "Erro", "Não foi possível carregar os exemplares disponíveis.");
@@ -242,6 +251,53 @@ export default function GameDetailsScreen() {
       setRentLoading(false);
     }
   }, [game, rentOriginalNow, showAlert]);
+
+
+
+  const checkFavorite = useCallback(async (gameId: string) => {
+    setFavLoading(true);
+    try {
+      const res = await api.get(`/favorites/check/${gameId}`);
+      setIsFavorite(!!res.data?.isFavorite);
+    } catch {
+      setIsFavorite(false);
+    } finally {
+      setFavLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (game?.id) checkFavorite(game.id);
+  }, [game?.id, checkFavorite]);
+
+  const handleToggleFavorite = async () => {
+    if (!game?.id || favSaving) return;
+
+    setFavSaving(true);
+    const next = !isFavorite;
+    setIsFavorite(next);
+
+    try {
+      if (next) {
+        await api.post(`/favorites/${game.id}`);
+        setFavToastMessage("Adicionado aos favoritos");
+      } else {
+        await api.delete(`/favorites/${game.id}`);
+        setFavToastMessage("Removido dos favoritos");
+      }
+
+      setFavToastVisible(true);
+
+      setTimeout(() => {
+        setFavToastVisible(false);
+      }, 3000);
+
+    } catch {
+      setIsFavorite(!next);
+    } finally {
+      setFavSaving(false);
+    }
+  };
 
   return (
     <View style={styles.root}>
@@ -262,7 +318,12 @@ export default function GameDetailsScreen() {
         </View>
       ) : (
         <>
-          <GameHero coverUrl={game.cover} />
+          <GameHero
+            gameId={game.id}
+            coverUrl={game.cover}
+            isFavorite={isFavorite}
+            onToggleFavorite={handleToggleFavorite}
+          />
 
           <View style={styles.sheet}>
             <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 120 }}>
@@ -307,6 +368,20 @@ export default function GameDetailsScreen() {
             onRentOriginal={rentOriginalNow}
             onRentCopy={(copyId: string) => rentCopyNow(copyId)}
           />
+          {favToastVisible && (
+            <View style={styles.toast}>
+              <Text style={styles.toastText}>{favToastMessage}</Text>
+
+              <Pressable
+                onPress={() => {
+                  setFavToastVisible(false);
+                  router.push("/favorites");
+                }}
+              >
+                <Text style={styles.toastAction}>Ver favoritos</Text>
+              </Pressable>
+            </View>
+          )}
 
           <LudusAlert
             visible={alertVisible}
@@ -334,4 +409,30 @@ const styles = StyleSheet.create({
     overflow: "hidden",
   },
   center: { flex: 1, alignItems: "center", justifyContent: "center", backgroundColor: "#fff" },
+  toast: {
+  position: "absolute",
+  bottom: 100, // acima do NavFooter
+  left: 20,
+  right: 20,
+  backgroundColor: "#1F1F1F",
+  paddingVertical: 14,
+  paddingHorizontal: 18,
+  borderRadius: 16,
+  flexDirection: "row",
+  justifyContent: "space-between",
+  alignItems: "center",
+  elevation: 8,
+},
+
+toastText: {
+  color: "#FFF",
+  fontWeight: "700",
+  fontSize: 14,
+},
+
+toastAction: {
+  color: "#FBBC04",
+  fontWeight: "900",
+  fontSize: 14,
+},
 });

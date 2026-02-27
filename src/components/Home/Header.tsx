@@ -3,7 +3,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
 
 export function Header() {
-  const { user, logout } = useAuth();
+  const { user} = useAuth();
 
   const firstName = user?.nome ? user.nome.split(" ")[0] : "Visitante";
   const notificationsCount = 0; 
