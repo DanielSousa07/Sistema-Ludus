@@ -3,6 +3,7 @@ import { EngagementPreview } from "@/src/components/Home/EngagementPreview";
 import { Header } from "@/src/components/Home/Header";
 import { HomeCard } from "@/src/components/Home/HomeCard";
 import SearchBar from "@/src/components/Home/SearchBar";
+import { useAuth } from "@/src/contexts/AuthContext";
 import { useFilters } from "@/src/contexts/FiltersContext";
 import { api } from "@/src/services/api";
 import { useRouter } from "expo-router";
@@ -42,6 +43,7 @@ type HomePayload = {
 };
 
 export default function HomeScreen() {
+  const { user } = useAuth()
   const router = useRouter();
   const [search, setSearch] = useState("");
 
@@ -53,6 +55,12 @@ export default function HomeScreen() {
   const [errMsg, setErrMsg] = useState<string | null>(null);
 
   const { activeCount } = useFilters();
+
+  useEffect(() => {
+    if (user?.role === "ADMIN") {
+      router.replace("/admin/manage");
+    }
+  }, [user?.role]);
 
   const loadHome = useCallback(async () => {
     setErrMsg(null);
@@ -67,6 +75,7 @@ export default function HomeScreen() {
       setMostRented([]);
     }
   }, []);
+
 
   useEffect(() => {
     (async () => {

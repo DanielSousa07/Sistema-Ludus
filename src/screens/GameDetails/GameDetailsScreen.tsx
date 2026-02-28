@@ -10,6 +10,7 @@ import { GameHero } from "@/src/components/GameDetails/GameHero";
 import { GameLocationPreview } from "@/src/components/GameDetails/GameLocationPreview";
 import { GameMeta } from "@/src/components/GameDetails/GameMeta";
 import { RateModal } from "@/src/components/GameDetails/RateModal";
+import { useAuth } from "@/src/contexts/AuthContext";
 
 
 import { RentModal } from "@/src/components/GameDetails/RentModal";
@@ -50,6 +51,8 @@ type AlertType = "error" | "success" | "info";
 export default function GameDetailsScreen() {
 
   const router = useRouter()
+  const { user } = useAuth();
+  const isAdmin = user?.role === "ADMIN";
 
   const params = useLocalSearchParams();
   const id = useMemo(
@@ -129,6 +132,10 @@ export default function GameDetailsScreen() {
   const handleSaveRating = async (value: number) => {
     if (!game) return;
 
+    if (isAdmin) {
+      showAlert("info", "Ação bloqueada", "Conta ADMIN não pode avaliar jogos.");
+      return;
+    }
     setSavingRate(true);
     try {
       const res = await api.post(`/games/${game.id}/rating`, { value });
@@ -147,21 +154,21 @@ export default function GameDetailsScreen() {
       setRateOpen(false);
       showAlert("success", "Avaliação salva!", "Sua avaliação foi registrada com sucesso.");
     } catch (e: any) {
-  const code = e?.response?.data?.code;
-  const msg = e?.response?.data?.error;
+      const code = e?.response?.data?.code;
+      const msg = e?.response?.data?.error;
 
-  if (code === "CANNOT_RATE") {
-    setCanRate(false);
-    showAlert(
-      "info",
-      "Avaliação bloqueada",
-      "Você só pode avaliar este jogo após devolver."
-    );
-    return;
-  }
+      if (code === "CANNOT_RATE") {
+        setCanRate(false);
+        showAlert(
+          "info",
+          "Avaliação bloqueada",
+          "Você só pode avaliar este jogo após devolver."
+        );
+        return;
+      }
 
-  showAlert("error", "Erro", msg || "Não foi possível salvar sua avaliação. Tente novamente.");
-}
+      showAlert("error", "Erro", msg || "Não foi possível salvar sua avaliação. Tente novamente.");
+    }
   };
 
   useEffect(() => {
@@ -172,11 +179,6 @@ export default function GameDetailsScreen() {
       .catch(() => setCanRate(false));
   }, [game?.id]);
 
-  const addDaysISO = (days: number) => {
-    const d = new Date();
-    d.setDate(d.getDate() + days);
-    return d.toISOString();
-  };
 
   const rentOriginalNow = useCallback(async () => {
     if (!game) return;
@@ -184,10 +186,9 @@ export default function GameDetailsScreen() {
     try {
       await api.post("/rentals", {
         gameId: game.id,
-        endDate: addDaysISO(4),
       });
 
-      showAlert("success", "Aluguel realizado!", "Você alugou o jogo por 4 dias.");
+      showAlert("success", "Aluguel realizado!", "Você alugou o jogo por 3 dias.");
       setRentOpen(false);
       await fetchDetails();
     } catch (e: any) {
@@ -210,6 +211,15 @@ export default function GameDetailsScreen() {
         return;
       }
 
+      if (code === "RENTAL_LIMIT_REACHED") {
+        showAlert(
+          "info",
+          "Limite atingido",
+          "Você já possui 2 aluguéis em aberto. Finalize um para alugar outro."
+        );
+        return;
+      }
+
       showAlert("error", "Erro", msg || "Não foi possível alugar. Tente novamente.");
     }
   }, [game, fetchDetails, showAlert]);
@@ -222,15 +232,23 @@ export default function GameDetailsScreen() {
         await api.post("/rentals", {
           gameId: game.id,
           copyId,
-          endDate: addDaysISO(4),
         });
 
-        showAlert("success", "Exemplar alugado!", "Você alugou um exemplar por 4 dias.");
+        showAlert("success", "Exemplar alugado!", "Você alugou um exemplar por 3 dias.");
         setRentOpen(false);
         await fetchDetails();
       } catch (e: any) {
         const code = e?.response?.data?.code;
         const msg = e?.response?.data?.error;
+
+        if (code === "RENTAL_LIMIT_REACHED") {
+          showAlert(
+            "info",
+            "Limite atingido",
+            "Você já possui 2 aluguéis em aberto. Finalize um para alugar outro."
+          );
+          return;
+        }
 
         if (code === "COPY_UNAVAILABLE") {
           showAlert(
@@ -342,7 +360,13 @@ export default function GameDetailsScreen() {
             gameId={game.id}
             coverUrl={game.cover}
             isFavorite={isFavorite}
-            onToggleFavorite={handleToggleFavorite}
+            onToggleFavorite={() => {
+              if (isAdmin) {
+                showAlert("info", "Ação bloqueada", "Administrador não pode favoritar jogos")
+                return;
+              }
+              handleToggleFavorite();
+            }}
           />
 
           <View style={styles.sheet}>
@@ -352,11 +376,15 @@ export default function GameDetailsScreen() {
                 avgRating={avgRating}
                 ratingsCount={game.ratingsCount}
                 onPressRate={() => {
+                  if (isAdmin) {
+                    showAlert("info", "Ação bloqueada", "Conta ADMIN não pode avaliar jogos.");
+                    return;
+                  }
                   if (!canRate) {
                     showAlert(
                       "info",
                       "Avaliação bloqueada",
-                      "Você só pode avaliar este jogo após alugar e marcar como devolvido."
+                      "Você só pode avaliar este jogo após alugar e devolver."
                     );
                     return;
                   }
@@ -379,7 +407,13 @@ export default function GameDetailsScreen() {
 
           <BottomBar
             price={game.price}
-            onPressRent={openRentFlow}
+            onPressRent={() => {
+              if (isAdmin) {
+                showAlert("info", "Ação bloqueada", "Adminstrador não pode alugar jogos.")
+                return;
+              }
+              openRentFlow();
+            }}
           />
 
           <RateModal
@@ -441,7 +475,7 @@ const styles = StyleSheet.create({
   center: { flex: 1, alignItems: "center", justifyContent: "center", backgroundColor: "#fff" },
   toast: {
     position: "absolute",
-    bottom: 100, // acima do NavFooter
+    bottom: 100,
     left: 20,
     right: 20,
     backgroundColor: "#1F1F1F",
