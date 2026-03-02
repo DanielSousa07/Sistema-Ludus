@@ -40,14 +40,19 @@ export function EngagementPreview() {
         const meRes = await api.get<MeRow>("/engagement/me");
         if (!mounted) return;
         setMe(meRes.data ?? null);
-      } catch (e) {
-        console.error("EngagementPreview error:", e);
-        if (!mounted) return;
-        setErr(true);
-        setMe(null);
-      } finally {
-        if (mounted) setLoading(false);
-      }
+      } catch (e: any) {
+  const status = e?.response?.status;
+  const code = e?.response?.data?.code;
+
+  if (status === 403 && (code === "EMAIL_NOT_VERIFIED" || code === "PHONE_NOT_VERIFIED")) {
+    setMe(null);
+    setErr(false);
+    return;
+  }
+
+  setErr(true);
+  setMe(null);
+}
     }
 
     load();

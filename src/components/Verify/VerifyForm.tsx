@@ -1,4 +1,5 @@
 import { useLocalSearchParams, useRouter } from "expo-router";
+import * as SecureStore from "expo-secure-store";
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
   Animated,
@@ -18,12 +19,19 @@ import { styles } from "./styles";
 import VerifyBackground from "./VerifyBackground";
 import VerifyHero from "./VerifyHero";
 
+type AlertType = "error" | "success" | "info";
+
 export default function VerifyForm() {
   const router = useRouter();
   const params = useLocalSearchParams();
 
-  const emailParam = Array.isArray(params.email) ? params.email[0] : (params.email as string | undefined);
-  const phoneParam = Array.isArray(params.phone) ? params.phone[0] : (params.phone as string | undefined);
+  const emailParam = Array.isArray(params.email)
+    ? params.email[0]
+    : (params.email as string | undefined);
+
+  const phoneParam = Array.isArray(params.phone)
+    ? params.phone[0]
+    : (params.phone as string | undefined);
 
   const [method, setMethod] = useState<"email" | "sms">("email");
 
@@ -31,11 +39,11 @@ export default function VerifyForm() {
   const phone = useMemo(() => (phoneParam || "").trim(), [phoneParam]);
 
   const [alertVisible, setAlertVisible] = useState(false);
-  const [alertType, setAlertType] = useState<"error" | "success" | "info">("info");
+  const [alertType, setAlertType] = useState<AlertType>("info");
   const [alertTitle, setAlertTitle] = useState("");
   const [alertMessage, setAlertMessage] = useState("");
 
-  const showAlert = (type: "error" | "success" | "info", title: string, message: string) => {
+  const showAlert = (type: AlertType, title: string, message: string) => {
     setAlertType(type);
     setAlertTitle(title);
     setAlertMessage(message);
@@ -44,12 +52,12 @@ export default function VerifyForm() {
 
   const [loading, setLoading] = useState(false);
 
-  // hero animation
+  
   const [renderHero, setRenderHero] = useState(true);
   const heroOpacity = useRef(new Animated.Value(1)).current;
   const heroScaleY = useRef(new Animated.Value(1)).current;
 
-  // otp
+  
   const OTP_LENGTH = 6;
   const [otp, setOtp] = useState<string[]>(Array(OTP_LENGTH).fill(""));
   const inputsRef = useRef<(TextInput | null)[]>([]);
@@ -60,11 +68,20 @@ export default function VerifyForm() {
   const [resendLoading, setResendLoading] = useState(false);
 
   
-  useEffect(() => {
-    if (!email) {
-      showAlert("error", "Erro", "E-mail não encontrado. Volte e tente novamente.");
-    }
-  }, [email]);
+useEffect(() => {
+  
+  if (email) {
+    setMethod("email");
+    return;
+  }
+  if (phone) {
+    setMethod("sms");
+    return;
+  }
+
+  showAlert("error", "Erro", "Não foi possível identificar e-mail/telefone. Faça login novamente.");
+}, [email, phone]);
+  
 
   useEffect(() => {
     const showSub = Keyboard.addListener("keyboardDidShow", () => {
@@ -96,7 +113,10 @@ export default function VerifyForm() {
   }, [heroOpacity, heroScaleY]);
 
   const Wrapper: any = Platform.OS === "ios" ? KeyboardAvoidingView : View;
-  const wrapperProps = Platform.OS === "ios" ? { behavior: "padding" as const, keyboardVerticalOffset: 0 } : {};
+  const wrapperProps =
+    Platform.OS === "ios"
+      ? { behavior: "padding" as const, keyboardVerticalOffset: 0 }
+      : {};
 
   const focusIndex = (i: number) => {
     if (i < 0 || i >= OTP_LENGTH) return;
@@ -145,7 +165,7 @@ export default function VerifyForm() {
     }
   };
 
-  // countdown
+  
   useEffect(() => {
     if (!isCounting) return;
 
@@ -163,12 +183,10 @@ export default function VerifyForm() {
     return () => clearInterval(timer);
   }, [isCounting]);
 
-  
   const switchMethod = async (next: "email" | "sms") => {
     setMethod(next);
     setOtp(Array(OTP_LENGTH).fill(""));
 
-    
     if (next === "email") {
       setCountdown(30);
       setIsCounting(true);
@@ -184,10 +202,27 @@ export default function VerifyForm() {
       return;
     }
 
-    
     setCountdown(0);
     setIsCounting(false);
   };
+
+  async function patchStoredUser(flags: { emailVerified?: boolean; phoneVerified?: boolean }) {
+    try {
+      const storedUser = await SecureStore.getItemAsync("user");
+      if (!storedUser) return;
+
+      const user = JSON.parse(storedUser);
+      const nextUser = {
+        ...user,
+        ...(flags.emailVerified !== undefined ? { emailVerified: flags.emailVerified } : {}),
+        ...(flags.phoneVerified !== undefined ? { phoneVerified: flags.phoneVerified } : {}),
+      };
+
+      await SecureStore.setItemAsync("user", JSON.stringify(nextUser));
+    } catch {
+      
+    }
+  }
 
   const handleConfirm = async () => {
     const fullCode = otp.join("");
@@ -195,19 +230,32 @@ export default function VerifyForm() {
       return showAlert("info", "Código incompleto", "Por favor, preencha os 6 dígitos.");
     }
 
+    
+    if (method === "email" && !email) {
+      return showAlert("error", "Erro", "E-mail não encontrado. Volte e tente novamente.");
+    }
+
+    
+    if (method === "sms" && !phone) {
+      return showAlert("info", "Sem telefone", "Você não informou telefone. Verifique por e-mail.");
+    }
+
     setLoading(true);
     try {
       if (method === "email") {
         await api.post("/auth/verify-email", { email, code: fullCode });
+        await patchStoredUser({ emailVerified: true });
         showAlert("success", "Verificado 🎉", "E-mail verificado com sucesso!");
       } else {
         await api.post("/auth/verify-phone", { phone, code: fullCode });
+        await patchStoredUser({ phoneVerified: true });
         showAlert("success", "Verificado 🎉", "Telefone verificado com sucesso!");
       }
 
+    
       router.replace("/home");
     } catch (error: any) {
-      const message = error.response?.data?.error || "Erro ao verificar código.";
+      const message = error?.response?.data?.error || "Erro ao verificar código.";
       showAlert("error", "Erro", message);
     } finally {
       setLoading(false);
@@ -216,6 +264,11 @@ export default function VerifyForm() {
 
   const handleResend = async () => {
     if (isCounting) return;
+
+  
+    if (method === "email" && !email) {
+      return showAlert("error", "Erro", "E-mail não encontrado. Volte e tente novamente.");
+    }
 
     try {
       setResendLoading(true);
@@ -235,10 +288,9 @@ export default function VerifyForm() {
       setCountdown(30);
       setIsCounting(true);
     } catch (error: any) {
-      const retryAfter = error.response?.data?.retryAfter;
-      const message = error.response?.data?.error || "Erro ao reenviar código.";
+      const retryAfter = error?.response?.data?.retryAfter;
+      const message = error?.response?.data?.error || "Erro ao reenviar código.";
 
-    
       if (retryAfter && typeof retryAfter === "number") {
         setCountdown(retryAfter);
         setIsCounting(true);
@@ -274,8 +326,6 @@ export default function VerifyForm() {
                   <VerifyHero method={method} />
                 </Animated.View>
               )}
-
-
 
               <Text style={styles.title}>
                 {method === "email"
@@ -315,13 +365,12 @@ export default function VerifyForm() {
                   {isCounting
                     ? `Reenviar em 00:${countdown.toString().padStart(2, "0")}`
                     : resendLoading
-                      ? "Enviando..."
-                      : method === "email"
-                        ? "REENVIAR E-MAIL"
-                        : "ENVIAR/REENVIAR SMS"}
+                    ? "Enviando..."
+                    : method === "email"
+                    ? "REENVIAR E-MAIL"
+                    : "ENVIAR/REENVIAR SMS"}
                 </Text>
               </Pressable>
-
 
               <View style={{ flexGrow: 1 }} />
 
@@ -330,35 +379,26 @@ export default function VerifyForm() {
                 onPress={handleConfirm}
                 disabled={loading}
               >
-                <Text style={styles.buttonText}>
-                  {loading ? "Processando..." : "Confirmar"}
-                </Text>
+                <Text style={styles.buttonText}>{loading ? "Processando..." : "Confirmar"}</Text>
               </Pressable>
 
-              <View style={{ marginBottom: 50,alignItems: "center" }}>
+              <View style={{ marginBottom: 50, alignItems: "center" }}>
                 {method === "email" ? (
                   <Text style={{ color: "#535353" }}>
                     Deseja verificar de outra forma?{" "}
-                    <Text
-                      style={{ color: "#E62325", fontWeight: "600" }}
-                      onPress={() => switchMethod("sms")}
-                    >
+                    <Text style={{ color: "#E62325", fontWeight: "600" }} onPress={() => switchMethod("sms")}>
                       Enviar SMS
                     </Text>
                   </Text>
                 ) : (
                   <Text style={{ color: "#535353" }}>
                     Deseja voltar para e-mail?{" "}
-                    <Text
-                      style={{ color: "#E62325", fontWeight: "600" }}
-                      onPress={() => switchMethod("email")}
-                    >
+                    <Text style={{ color: "#E62325", fontWeight: "600" }} onPress={() => switchMethod("email")}>
                       Verificar por e-mail
                     </Text>
                   </Text>
                 )}
               </View>
-
             </View>
           </View>
         </ScrollView>
