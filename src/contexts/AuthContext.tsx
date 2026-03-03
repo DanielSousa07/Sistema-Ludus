@@ -1,6 +1,7 @@
 import * as SecureStore from "expo-secure-store";
 import React, { createContext, useContext, useEffect, useMemo, useState } from "react";
 import { api } from "../services/api";
+import { attachNotificationListeners, registerForPush } from "../services/push.client";
 
 type Role = "USER" | "ADMIN" | string;
 
@@ -72,14 +73,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     loadStorageData();
   }, []);
 
-  async function signInWithToken(token: string, userData: AuthUser) {
-    api.defaults.headers.common["Authorization"] = `Bearer ${token}`;
+useEffect(() => {
+  const detach = attachNotificationListeners();
+  return detach;
+}, []);
 
-    await SecureStore.setItemAsync("token", token);
-    await SecureStore.setItemAsync("user", JSON.stringify(userData));
+async function signInWithToken(token: string, userData: AuthUser) {
+  api.defaults.headers.common["Authorization"] = `Bearer ${token}`;
+  await SecureStore.setItemAsync("token", token);
+  await SecureStore.setItemAsync("user", JSON.stringify(userData));
+  setUser(userData);
 
-    setUser(userData);
-  }
+  
+  try {
+    await registerForPush(userData.id);
+  } catch {}
+}
 
   async function login(emailOrPhone: string, senha: string): Promise<AuthResult> {
     try {
@@ -94,6 +103,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       };
 
       await signInWithToken(token, userData);
+
       return { success: true };
     } catch (error: any) {
       let message = "Erro ao conectar com o servidor";

@@ -95,6 +95,7 @@ export function EditGameModal({
                             onChangeText={setDescription}
                             style={[styles.input, { height: 98 }]}
                             placeholder="Escreva uma descrição curta..."
+                            placeholderTextColor="#333"
                             multiline
                             textAlignVertical="top"
                         />

@@ -17,3 +17,8 @@ export function goToVerify(params?: { email?: string; phone?: string }) {
     },
   });
 }
+
+export function goToRoute(pathname: string, params?: Record<string, any>) {
+  if (!routerRef) return;
+  routerRef.push({ pathname: pathname as any, params: params ?? {} } as any);
+}

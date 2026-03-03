@@ -1,34 +1,67 @@
 import { useAuth } from "@/src/contexts/AuthContext";
+import { api } from "@/src/services/api";
+import { goToRoute } from "@/src/services/navigation";
 import { Ionicons } from "@expo/vector-icons";
+import { useCallback, useEffect, useState } from "react";
 import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
 
 export function Header() {
-  const { user} = useAuth();
+  const { user } = useAuth();
 
-  const firstName = user?.nome ? user.nome.split(" ")[0] : "Visitante";
-  const notificationsCount = 0; 
+  const firstName = user?.name
+    ? user.name.split(" ")[0]
+    : "Visitante";
+
+  const [notificationsCount, setNotificationsCount] = useState(0);
+
+  const loadUnreadCount = useCallback(async () => {
+    try {
+      const res = await api.get<{ count: number }>(
+        "/notifications/unread-count"
+      );
+      setNotificationsCount(res.data?.count ?? 0);
+    } catch (e) {
+      setNotificationsCount(0);
+    }
+  }, []);
+
+  useEffect(() => {
+    loadUnreadCount();
+  }, [loadUnreadCount]);
 
   return (
     <View style={styles.container}>
       <View>
         <Text style={styles.hello}>Olá,</Text>
         <Text style={styles.name}>{firstName}!</Text>
-        <Text style={styles.TextSearch}>Alugue seus jogos ideais!</Text>
+        <Text style={styles.TextSearch}>
+          Alugue seus jogos ideais!
+        </Text>
       </View>
 
       <TouchableOpacity
         style={styles.nofication}
         onPress={() => {
-          
+          goToRoute("/notifications");
         }}
         activeOpacity={0.8}
       >
-        <Ionicons name="notifications" size={22} color="#31358B" />
+        <Ionicons
+          name={
+            notificationsCount > 0
+              ? "notifications"
+              : "notifications-outline"
+          }
+          size={22}
+          color="#31358B"
+        />
 
         {notificationsCount > 0 && (
-          <View style={styles.badge} >
+          <View style={styles.badge}>
             <Text style={styles.badgeText}>
-              {notificationsCount > 9 ? "9+" : notificationsCount}
+              {notificationsCount > 9
+                ? "9+"
+                : notificationsCount}
             </Text>
           </View>
         )}
