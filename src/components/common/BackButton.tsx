@@ -26,16 +26,16 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
 
-    // sombra externa (Android)
+    
     elevation: 6,
 
-    // sombra externa (iOS)
+  
     shadowColor: "#000",
     shadowOpacity: 0.08,
     shadowRadius: 10,
     shadowOffset: { width: 0, height: 6 },
 
-    // sombra interna fake (estilo Figma)
+    
     borderWidth: 1,
     borderColor: "rgba(0,0,0,0.03)",
   },

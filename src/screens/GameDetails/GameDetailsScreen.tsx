@@ -1,6 +1,6 @@
 import { api } from "@/src/services/api";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 
 import { BottomBar } from "@/src/components/GameDetails/BottomBar";
@@ -10,13 +10,10 @@ import { GameHero } from "@/src/components/GameDetails/GameHero";
 import { GameLocationPreview } from "@/src/components/GameDetails/GameLocationPreview";
 import { GameMeta } from "@/src/components/GameDetails/GameMeta";
 import { RateModal } from "@/src/components/GameDetails/RateModal";
-import { useAuth } from "@/src/contexts/AuthContext";
-
-
 import { RentModal } from "@/src/components/GameDetails/RentModal";
-
-
+import { TermsRentModal } from "@/src/components/RentTerms/TermsRentModal";
 import LudusAlert from "@/src/components/common/LudusAlert/LudusAlert";
+import { useAuth } from "@/src/contexts/AuthContext";
 
 type GameDetails = {
   id: string;
@@ -49,8 +46,7 @@ type Copy = {
 type AlertType = "error" | "success" | "info";
 
 export default function GameDetailsScreen() {
-
-  const router = useRouter()
+  const router = useRouter();
   const { user } = useAuth();
   const isAdmin = user?.role === "ADMIN";
 
@@ -76,8 +72,12 @@ export default function GameDetailsScreen() {
 
   const [rateOpen, setRateOpen] = useState(false);
   const [savingRate, setSavingRate] = useState(false);
-
   const [canRate, setCanRate] = useState(false);
+
+  // Terms modal (primeiro aluguel)
+  const [termsOpen, setTermsOpen] = useState(false);
+  const [termsLoading, setTermsLoading] = useState(false);
+  const pendingRentRef = useRef<null | { type: "original" } | { type: "copy"; copyId: string }>(null);
 
   const [alertVisible, setAlertVisible] = useState(false);
   const [alertType, setAlertType] = useState<AlertType>("info");
@@ -129,6 +129,12 @@ export default function GameDetailsScreen() {
 
   const ageText = game?.minAge ? `${game.minAge}+ anos` : "—";
 
+  function isTermsBlocked(e: any) {
+    const status = e?.response?.status;
+    const code = e?.response?.data?.code;
+    return status === 403 && code === "TERMS_NOT_ACCEPTED";
+  }
+
   const handleSaveRating = async (value: number) => {
     if (!game) return;
 
@@ -136,6 +142,7 @@ export default function GameDetailsScreen() {
       showAlert("info", "Ação bloqueada", "Conta ADMIN não pode avaliar jogos.");
       return;
     }
+
     setSavingRate(true);
     try {
       const res = await api.post(`/games/${game.id}/rating`, { value });
@@ -143,11 +150,11 @@ export default function GameDetailsScreen() {
       setGame((prev) =>
         prev
           ? {
-            ...prev,
-            rating: res.data?.avgRating ?? prev.rating,
-            ratingsCount: res.data?.ratingsCount ?? prev.ratingsCount,
-            myRating: res.data?.myRating ?? value,
-          }
+              ...prev,
+              rating: res.data?.avgRating ?? prev.rating,
+              ratingsCount: res.data?.ratingsCount ?? prev.ratingsCount,
+              myRating: res.data?.myRating ?? value,
+            }
           : prev
       );
 
@@ -159,26 +166,24 @@ export default function GameDetailsScreen() {
 
       if (code === "CANNOT_RATE") {
         setCanRate(false);
-        showAlert(
-          "info",
-          "Avaliação bloqueada",
-          "Você só pode avaliar este jogo após devolver."
-        );
+        showAlert("info", "Avaliação bloqueada", "Você só pode avaliar este jogo após devolver.");
         return;
       }
 
       showAlert("error", "Erro", msg || "Não foi possível salvar sua avaliação. Tente novamente.");
+    } finally {
+      setSavingRate(false);
     }
   };
 
   useEffect(() => {
     if (!game?.id) return;
 
-    api.get(`/games/${game.id}/can-rate`)
-      .then(res => setCanRate(res.data.canRate))
+    api
+      .get(`/games/${game.id}/can-rate`)
+      .then((res) => setCanRate(!!res.data?.canRate))
       .catch(() => setCanRate(false));
   }, [game?.id]);
-
 
   const rentOriginalNow = useCallback(async () => {
     if (!game) return;
@@ -188,21 +193,23 @@ export default function GameDetailsScreen() {
         gameId: game.id,
       });
 
-      showAlert("success", "Aluguel realizado!", "Você alugou o jogo por 3 dias.");
+      
+      showAlert("success", "Aluguel realizado!", "Retire o seu jogo na Biblioteca IFMA - Campus Timon");
       setRentOpen(false);
       await fetchDetails();
     } catch (e: any) {
+      if (isTermsBlocked(e)) {
+        pendingRentRef.current = { type: "original" };
+        setTermsOpen(true);
+        return;
+      }
+
       const code = e?.response?.data?.code;
       const msg = e?.response?.data?.error;
 
       if (code === "ONLY_COPIES_ALLOWED") {
-
         setRentOpen(true);
-        showAlert(
-          "info",
-          "Escolha um exemplar",
-          "Este jogo só pode ser alugado por exemplar."
-        );
+        showAlert("info", "Escolha um exemplar", "Este jogo só pode ser alugado por exemplar.");
         return;
       }
 
@@ -212,11 +219,7 @@ export default function GameDetailsScreen() {
       }
 
       if (code === "RENTAL_LIMIT_REACHED") {
-        showAlert(
-          "info",
-          "Limite atingido",
-          "Você já possui 2 aluguéis em aberto. Finalize um para alugar outro."
-        );
+        showAlert("info", "Limite atingido", "Você já possui 2 aluguéis em aberto. Finalize um para alugar outro.");
         return;
       }
 
@@ -234,28 +237,26 @@ export default function GameDetailsScreen() {
           copyId,
         });
 
-        showAlert("success", "Exemplar alugado!", "Você alugou um exemplar por 3 dias.");
+        showAlert("success", "Exemplar alugado!", "Retire o seu jogo na Biblioteca IFMA - Campus Timon");
         setRentOpen(false);
         await fetchDetails();
       } catch (e: any) {
+        if (isTermsBlocked(e)) {
+          pendingRentRef.current = { type: "copy", copyId };
+          setTermsOpen(true);
+          return;
+        }
+
         const code = e?.response?.data?.code;
         const msg = e?.response?.data?.error;
 
         if (code === "RENTAL_LIMIT_REACHED") {
-          showAlert(
-            "info",
-            "Limite atingido",
-            "Você já possui 2 aluguéis em aberto. Finalize um para alugar outro."
-          );
+          showAlert("info", "Limite atingido", "Você já possui 2 aluguéis em aberto. Finalize um para alugar outro.");
           return;
         }
 
         if (code === "COPY_UNAVAILABLE") {
-          showAlert(
-            "error",
-            "Exemplar indisponível",
-            "Esse exemplar acabou de ficar indisponível. Atualize e tente outro."
-          );
+          showAlert("error", "Exemplar indisponível", "Esse exemplar acabou de ficar indisponível. Atualize e tente outro.");
           return;
         }
 
@@ -265,22 +266,43 @@ export default function GameDetailsScreen() {
     [game, fetchDetails, showAlert]
   );
 
+  const acceptTermsAndContinue = useCallback(async () => {
+    if (!pendingRentRef.current) return;
+
+    setTermsLoading(true);
+    try {
+      await api.post("/rentals/accept-terms");
+
+      setTermsOpen(false);
+
+      const pending = pendingRentRef.current;
+      pendingRentRef.current = null;
+
+      if (pending.type === "original") {
+        await rentOriginalNow();
+      } else {
+        await rentCopyNow(pending.copyId);
+      }
+    } catch (e) {
+      showAlert("error", "Erro", "Não foi possível aceitar os termos. Tente novamente.");
+    } finally {
+      setTermsLoading(false);
+    }
+  }, [rentCopyNow, rentOriginalNow, showAlert]);
+
   const openRentFlow = useCallback(async () => {
     if (!game) return;
 
     setRentLoading(true);
     try {
-
       const res = await api.get(`/games/${game.id}/copies/available`);
       const copies: Copy[] = res.data || [];
       setAvailableCopies(copies);
-
 
       if (copies.length === 0) {
         await rentOriginalNow();
         return;
       }
-
 
       setRentOpen(true);
     } catch (e: any) {
@@ -289,8 +311,6 @@ export default function GameDetailsScreen() {
       setRentLoading(false);
     }
   }, [game, rentOriginalNow, showAlert]);
-
-
 
   const checkFavorite = useCallback(async (gameId: string) => {
     setFavLoading(true);
@@ -325,11 +345,7 @@ export default function GameDetailsScreen() {
       }
 
       setFavToastVisible(true);
-
-      setTimeout(() => {
-        setFavToastVisible(false);
-      }, 3000);
-
+      setTimeout(() => setFavToastVisible(false), 3000);
     } catch {
       setIsFavorite(!next);
     } finally {
@@ -362,7 +378,7 @@ export default function GameDetailsScreen() {
             isFavorite={isFavorite}
             onToggleFavorite={() => {
               if (isAdmin) {
-                showAlert("info", "Ação bloqueada", "Administrador não pode favoritar jogos")
+                showAlert("info", "Ação bloqueada", "Administrador não pode favoritar jogos");
                 return;
               }
               handleToggleFavorite();
@@ -381,11 +397,7 @@ export default function GameDetailsScreen() {
                     return;
                   }
                   if (!canRate) {
-                    showAlert(
-                      "info",
-                      "Avaliação bloqueada",
-                      "Você só pode avaliar este jogo após alugar e devolver."
-                    );
+                    showAlert("info", "Avaliação bloqueada", "Você só pode avaliar este jogo após alugar e devolver.");
                     return;
                   }
                   setRateOpen(true);
@@ -409,7 +421,7 @@ export default function GameDetailsScreen() {
             price={game.price}
             onPressRent={() => {
               if (isAdmin) {
-                showAlert("info", "Ação bloqueada", "Adminstrador não pode alugar jogos.")
+                showAlert("info", "Ação bloqueada", "Administrador não pode alugar jogos.");
                 return;
               }
               openRentFlow();
@@ -432,10 +444,20 @@ export default function GameDetailsScreen() {
             onRentOriginal={rentOriginalNow}
             onRentCopy={(copyId: string) => rentCopyNow(copyId)}
           />
+
+          <TermsRentModal
+            visible={termsOpen}
+            loading={termsLoading}
+            onClose={() => {
+              setTermsOpen(false);
+              pendingRentRef.current = null;
+            }}
+            onAccept={acceptTermsAndContinue}
+          />
+
           {favToastVisible && (
             <View style={styles.toast}>
               <Text style={styles.toastText}>{favToastMessage}</Text>
-
               <Pressable
                 onPress={() => {
                   setFavToastVisible(false);
@@ -473,6 +495,7 @@ const styles = StyleSheet.create({
     overflow: "hidden",
   },
   center: { flex: 1, alignItems: "center", justifyContent: "center", backgroundColor: "#fff" },
+
   toast: {
     position: "absolute",
     bottom: 100,
@@ -487,16 +510,6 @@ const styles = StyleSheet.create({
     alignItems: "center",
     elevation: 8,
   },
-
-  toastText: {
-    color: "#FFF",
-    fontWeight: "700",
-    fontSize: 14,
-  },
-
-  toastAction: {
-    color: "#FBBC04",
-    fontWeight: "900",
-    fontSize: 14,
-  },
+  toastText: { color: "#FFF", fontWeight: "700", fontSize: 14 },
+  toastAction: { color: "#FBBC04", fontWeight: "900", fontSize: 14 },
 });

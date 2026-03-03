@@ -1,4 +1,3 @@
-import { NavFooter } from "@/src/components/common/NavFooter";
 import HomeBackground from "@/src/components/Home/HomeBackground";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
@@ -11,10 +10,10 @@ export default function TermsScreen() {
     <View style={styles.root}>
       <HomeBackground />
 
-      
+
       <View style={styles.header}>
         <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
-          <Ionicons name="chevron-back" size={22} color="#FFF" />
+          <Ionicons name="chevron-back" size={22} color="#e80f0f" />
         </TouchableOpacity>
 
         <Text style={styles.headerTitle}>Termos e Contrato</Text>
@@ -130,8 +129,6 @@ export default function TermsScreen() {
           </Text>
         </ScrollView>
       </View>
-
-      <NavFooter />
     </View>
   );
 }
@@ -158,10 +155,10 @@ const styles = StyleSheet.create({
   },
 
   backBtn: {
-    width: 46,
-    height: 46,
+    width: 50,
+    height: 50,
     borderRadius: 16,
-    backgroundColor: "rgba(0,0,0,0.18)",
+    backgroundColor: "rgb(255, 255, 255)",
     alignItems: "center",
     justifyContent: "center",
   },
@@ -184,7 +181,7 @@ const styles = StyleSheet.create({
   sheetContent: {
     paddingHorizontal: 18,
     paddingTop: 10,
-    paddingBottom: 120, 
+    paddingBottom: 60, 
   },
 
   title: {
