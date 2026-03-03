@@ -8,8 +8,8 @@ import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
 export function Header() {
   const { user } = useAuth();
 
-  const firstName = user?.name
-    ? user.name.split(" ")[0]
+  const firstName = user?.nome
+    ? user.nome.split(" ")[0]
     : "Visitante";
 
   const [notificationsCount, setNotificationsCount] = useState(0);

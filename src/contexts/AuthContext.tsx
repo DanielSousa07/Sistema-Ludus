@@ -84,12 +84,13 @@ async function signInWithToken(token: string, userData: AuthUser) {
   await SecureStore.setItemAsync("user", JSON.stringify(userData));
   setUser(userData);
 
-  
   try {
-    await registerForPush(userData.id);
-  } catch {}
+    const pushToken = await registerForPush(userData.id);
+    console.log("Push Token registrado com sucesso:", pushToken);
+  } catch (error) {
+    console.error("Falha crítica ao registrar Push Token:", error);
+  }
 }
-
   async function login(emailOrPhone: string, senha: string): Promise<AuthResult> {
     try {
       const response = await api.post("/auth/login", {
@@ -126,7 +127,6 @@ async function signInWithToken(token: string, userData: AuthUser) {
     try {
       await api.post("/auth/register", { name, email, phone, senha });
 
-      // login automático (continua igual)
       const loginResult = await login(email, senha);
 
       if (loginResult.success) {

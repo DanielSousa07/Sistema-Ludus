@@ -19,10 +19,14 @@ export async function registerForPush(userId?: string) {
   if (!userId) return;
 
   if (Platform.OS === "android") {
+    
     await Notifications.setNotificationChannelAsync("rentals", {
       name: "Aluguéis",
-      importance: Notifications.AndroidImportance.MAX,
+      importance: Notifications.AndroidImportance.MAX, 
+      vibrationPattern: [0, 250, 250, 250],
+      lightColor: "#FF231F7C",
     });
+    
     await Notifications.setNotificationChannelAsync("system", {
       name: "Sistema",
       importance: Notifications.AndroidImportance.DEFAULT,
@@ -37,7 +41,10 @@ export async function registerForPush(userId?: string) {
     finalStatus = status;
   }
 
-  if (finalStatus !== "granted") return;
+  if (finalStatus !== "granted") {
+    console.log("Permissão de notificação negada.");
+    return;
+  }
 
   const projectId =
     Constants.expoConfig?.extra?.eas?.projectId ||
@@ -46,7 +53,7 @@ export async function registerForPush(userId?: string) {
   const token = (await Notifications.getExpoPushTokenAsync({ projectId })).data;
 
   
-  await api.post("/push/register", { token });
+  await api.post("/users/me/push-token", { expoPushToken: token });
 
   return token;
 }
