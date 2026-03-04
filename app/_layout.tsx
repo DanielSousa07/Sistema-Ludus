@@ -1,11 +1,21 @@
 import { AuthProvider } from "@/src/contexts/AuthContext";
 import { FilterProvider } from "@/src/contexts/FiltersContext";
 import { setRouter } from "@/src/services/navigation";
+import * as Notifications from "expo-notifications";
 import { Stack, useRouter } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { useEffect } from "react";
-import { GestureHandlerRootView } from "react-native-gesture-handler"; // Importação necessária
+import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { SafeAreaProvider } from "react-native-safe-area-context";
+
+Notifications.setNotificationHandler({
+  handleNotification: async () => ({
+    shouldShowBanner: true,
+    shouldPlaySound: true,
+    shouldSetBadge: true,
+    shouldShowList: true,
+  })
+})
 
 export default function Layout() {
   const router = useRouter();
@@ -15,7 +25,6 @@ export default function Layout() {
   }, [router]);
 
   return (
-    // Adicione o GestureHandlerRootView como o pai mais externo
     <GestureHandlerRootView style={{ flex: 1 }}>
       <SafeAreaProvider>
         <AuthProvider>
