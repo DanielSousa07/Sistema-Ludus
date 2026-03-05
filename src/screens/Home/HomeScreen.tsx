@@ -17,6 +17,9 @@ import {
   Text,
   View,
 } from "react-native";
+
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+
 import HomeBackground from "../../components/Home/HomeBackground";
 
 export type HomeGame = {
@@ -43,8 +46,12 @@ type HomePayload = {
 };
 
 export default function HomeScreen() {
-  const { user } = useAuth()
+  const { user } = useAuth();
   const router = useRouter();
+  const insets = useSafeAreaInsets();
+
+  const footerSpace = 80 + insets.bottom;
+
   const [search, setSearch] = useState("");
 
   const [forYou, setForYou] = useState<HomeGame[]>([]);
@@ -64,6 +71,7 @@ export default function HomeScreen() {
 
   const loadHome = useCallback(async () => {
     setErrMsg(null);
+
     try {
       const res = await api.get<HomePayload>("/games/home");
       setForYou(res.data?.forYou || []);
@@ -75,7 +83,6 @@ export default function HomeScreen() {
       setMostRented([]);
     }
   }, []);
-
 
   useEffect(() => {
     (async () => {
@@ -93,6 +100,7 @@ export default function HomeScreen() {
 
   const onSubmitSearch = useCallback(() => {
     if (!search.trim()) return;
+
     Keyboard.dismiss();
 
     router.push({
@@ -102,17 +110,19 @@ export default function HomeScreen() {
   }, [router, search]);
 
   return (
-    <View style={{ flex: 1 }}>
+    <View style={{ flex: 1, paddingTop: insets.top }}>
       <HomeBackground />
 
       <ScrollView
-        contentContainerStyle={{ paddingBottom: 65 }}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
         showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+        }
       >
         <View style={styles.topBlock}>
           <Header />
           <EngagementPreview />
+
           <View style={styles.searchWrap}>
             <SearchBar
               value={search}
@@ -123,24 +133,22 @@ export default function HomeScreen() {
           </View>
         </View>
 
-
         {loading ? (
-          <View style={{ paddingTop: 30, alignItems: "center" }}>
+          <View style={styles.center}>
             <ActivityIndicator size="large" />
-            <Text style={{ marginTop: 10, color: "#E0E0E0", fontWeight: "700" }}>
-              Carregando jogos...
-            </Text>
+            <Text style={styles.loadingText}>Carregando jogos...</Text>
           </View>
         ) : errMsg ? (
-          <View style={{ paddingTop: 30, alignItems: "center" }}>
-            <Text style={{ color: "#E0E0E0", fontWeight: "800" }}>{errMsg}</Text>
+          <View style={styles.center}>
+            <Text style={styles.errorText}>{errMsg}</Text>
+
             <Text
               onPress={async () => {
                 setLoading(true);
                 await loadHome();
                 setLoading(false);
               }}
-              style={{ marginTop: 10, color: "#FFFFFF", fontWeight: "900" }}
+              style={styles.retry}
             >
               Tentar novamente
             </Text>
@@ -150,6 +158,7 @@ export default function HomeScreen() {
             forYou={forYou}
             mostRented={mostRented}
             onSeeAll={() => router.push("/search")}
+            footerSpace={footerSpace}
           />
         )}
       </ScrollView>
@@ -163,8 +172,31 @@ const styles = StyleSheet.create({
   topBlock: {
     paddingBottom: 6,
   },
+
   searchWrap: {
     backgroundColor: "transparent",
     paddingBottom: 6,
+  },
+
+  center: {
+    paddingTop: 30,
+    alignItems: "center",
+  },
+
+  loadingText: {
+    marginTop: 10,
+    color: "#E0E0E0",
+    fontWeight: "700",
+  },
+
+  errorText: {
+    color: "#E0E0E0",
+    fontWeight: "800",
+  },
+
+  retry: {
+    marginTop: 10,
+    color: "#FFFFFF",
+    fontWeight: "900",
   },
 });

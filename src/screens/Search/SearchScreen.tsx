@@ -1,23 +1,15 @@
-import { useFilters } from "@/src/contexts/FiltersContext";
+import { DEFAULT_FILTERS, useFilters } from "@/src/contexts/FiltersContext";
 import { api } from "@/src/services/api";
 import { Ionicons } from "@expo/vector-icons";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import {
-    FlatList,
-    Image,
-    Pressable,
-    RefreshControl,
-    Text,
-    View,
-} from "react-native";
+import { FlatList, Image, Pressable, RefreshControl, Text, View } from "react-native";
 
 import GameCard, { Game } from "@/src/components/Search/GameCard";
 import SearchBackground from "@/src/components/Search/SearchBackground";
 import SearchTop from "@/src/components/Search/SearchTop";
 
-
-const EMPTY_IMAGE = require("../../../assets/no-result.png")
+const EMPTY_IMAGE = require("../../../assets/no-result.png");
 
 export default function SearchScreen() {
   const router = useRouter();
@@ -28,6 +20,8 @@ export default function SearchScreen() {
 
   const { filters, activeCount } = useFilters();
 
+  const safeFilters = filters ?? DEFAULT_FILTERS;
+
   const [q, setQ] = useState(initialQ);
   const [games, setGames] = useState<Game[]>([]);
   const [refreshing, setRefreshing] = useState(false);
@@ -35,25 +29,35 @@ export default function SearchScreen() {
   const requestIdRef = useRef(0);
 
   const queryParams = useMemo(() => {
-    const status = filters.status === "ALL" ? undefined : filters.status;
+    const status = safeFilters.status === "ALL" ? undefined : safeFilters.status;
+
+    const sendPrice =
+      safeFilters.priceMin !== DEFAULT_FILTERS.priceMin ||
+      safeFilters.priceMax !== DEFAULT_FILTERS.priceMax;
+
+    const sendTime = safeFilters.timeMax !== DEFAULT_FILTERS.timeMax;
 
     return {
       q: q.trim() || undefined,
       status,
-      players: filters.players ?? undefined,
-      age: filters.age ?? undefined,
-      stars: filters.stars.length ? filters.stars.join(",") : undefined,
-      priceMin: filters.priceMin,
-      priceMax: filters.priceMax,
-      timeMax: filters.timeMax,
+      players: safeFilters.players ?? undefined,
+      age: safeFilters.age ?? undefined,
+      stars: safeFilters.stars.length ? safeFilters.stars.join(",") : undefined,
+
+      priceMin: sendPrice ? safeFilters.priceMin : undefined,
+      priceMax: sendPrice ? safeFilters.priceMax : undefined,
+
+      timeMax: sendTime ? safeFilters.timeMax : undefined,
     };
-  }, [q, filters]);
+  }, [q, safeFilters]);
 
   const fetchGames = useCallback(async () => {
     const currentId = ++requestIdRef.current;
+
     try {
       const res = await api.get("/games", { params: queryParams });
       if (currentId !== requestIdRef.current) return;
+
       setGames(res.data || []);
     } catch (e) {
       console.log("Erro ao buscar jogos:", e);
@@ -78,7 +82,6 @@ export default function SearchScreen() {
     <View style={{ flex: 1 }}>
       <SearchBackground />
 
-      
       <SearchTop
         value={q}
         onChangeText={setQ}
@@ -87,7 +90,6 @@ export default function SearchScreen() {
         activeFiltersCount={activeCount}
       />
 
-      
       <View
         style={{
           flex: 1,
@@ -99,7 +101,6 @@ export default function SearchScreen() {
           overflow: "hidden",
         }}
       >
-        
         <View
           style={{
             paddingHorizontal: 18,
@@ -157,28 +158,16 @@ export default function SearchScreen() {
           contentContainerStyle={{
             paddingBottom: 20,
             paddingTop: 4,
-            flexGrow: 1, 
+            flexGrow: 1,
           }}
-          refreshControl={
-            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
-          }
+          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
           ListEmptyComponent={
-            <View
-              style={{
-                flex: 1,
-                alignItems: "center",
-                justifyContent: "center",
-                paddingBottom: 50,
-              }}
-            >
-              
-                <Image
-                  source={EMPTY_IMAGE}
-                  style={{ width: 140, height: 140, marginBottom: 18, opacity: 0.85 }}
-                  resizeMode="contain"
-                />
-          
-
+            <View style={{ flex: 1, alignItems: "center", justifyContent: "center", paddingBottom: 50 }}>
+              <Image
+                source={EMPTY_IMAGE}
+                style={{ width: 140, height: 140, marginBottom: 18, opacity: 0.85 }}
+                resizeMode="contain"
+              />
               <Text
                 style={{
                   marginTop: 6,

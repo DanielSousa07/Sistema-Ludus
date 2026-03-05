@@ -1,5 +1,5 @@
 import { AuthProvider } from "@/src/contexts/AuthContext";
-import { FilterProvider } from "@/src/contexts/FiltersContext";
+import { FiltersProvider } from "@/src/contexts/FiltersContext";
 import { setRouter } from "@/src/services/navigation";
 import * as Notifications from "expo-notifications";
 import { Stack, useRouter } from "expo-router";
@@ -14,8 +14,8 @@ Notifications.setNotificationHandler({
     shouldPlaySound: true,
     shouldSetBadge: true,
     shouldShowList: true,
-  })
-})
+  }),
+});
 
 export default function Layout() {
   const router = useRouter();
@@ -28,7 +28,7 @@ export default function Layout() {
     <GestureHandlerRootView style={{ flex: 1 }}>
       <SafeAreaProvider>
         <AuthProvider>
-          <FilterProvider>
+          <FiltersProvider>
             <StatusBar style="light" backgroundColor="transparent" translucent />
             <Stack screenOptions={{ headerShown: false, animation: "fade" }}>
               <Stack.Screen name="index" />
@@ -39,9 +39,11 @@ export default function Layout() {
               <Stack.Screen name="register" />
               <Stack.Screen name="verify" />
               <Stack.Screen name="favorites" />
-              
+              <Stack.Screen name="search" />
+              <Stack.Screen name="filter" />
+              <Stack.Screen name="game/[id]" />
             </Stack>
-          </FilterProvider>
+          </FiltersProvider>
         </AuthProvider>
       </SafeAreaProvider>
     </GestureHandlerRootView>

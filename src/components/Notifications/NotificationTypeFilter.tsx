@@ -4,7 +4,6 @@ import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 export type NotificationTypeFilterValue =
   | "all"
   | "rentals"
-  | "favorites"
   | "ratings"
   | "verify"
   | "progress"
@@ -13,7 +12,7 @@ export type NotificationTypeFilterValue =
 type Counts = {
   all: number;
   rentals: number;
-  favorites: number;
+ 
   ratings: number;
   verify: number;
   progress: number;
@@ -28,7 +27,6 @@ const FILTERS: Array<{
 }> = [
   { key: "all", label: "Tudo", icon: "apps", tone: "blue" },
   { key: "rentals", label: "Aluguéis", icon: "game-controller", tone: "blue" },
-  { key: "favorites", label: "Favoritos", icon: "heart", tone: "red" },
   { key: "ratings", label: "Avaliações", icon: "star", tone: "yellow" },
   { key: "verify", label: "Verificação", icon: "shield-checkmark", tone: "blue" },
   { key: "progress", label: "Ranking", icon: "trophy", tone: "yellow" },

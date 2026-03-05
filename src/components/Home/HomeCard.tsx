@@ -5,82 +5,90 @@ import GameCardVertical from "./GameCardVertical";
 import GameCarousel from "./GameCarousel";
 
 export function HomeCard({
-    forYou,
-    mostRented,
-    onSeeAll,
+  forYou,
+  mostRented,
+  onSeeAll,
+  footerSpace,
 }: {
-    forYou: HomeGame[];
-    mostRented: HomeGame[];
-    onSeeAll: () => void;
+  forYou: HomeGame[];
+  mostRented: HomeGame[];
+  onSeeAll: () => void;
+  footerSpace: number;
 }) {
-    const forYouGames = forYou.slice(0, 3);
-    const mostRentedGames = mostRented.slice(0, 6);
-    const {logout} = useAuth()
+  const forYouGames = forYou.slice(0, 3);
+  const mostRentedGames = mostRented.slice(0, 6);
 
-    return (
-        <View style={styles.card}>
-            <View style={styles.sectionHeader}>
-                <Text style={styles.sectionTitle}>Para Você</Text>
+  const { logout } = useAuth();
 
-                <Pressable onPress={() => logout()} hitSlop={10}>
-                    <Text style={styles.seeAll}>Ver tudo</Text>
-                </Pressable>
-            </View>
+  return (
+    <View style={styles.card}>
+      <View style={styles.sectionHeader}>
+        <Text style={styles.sectionTitle}>Para Você</Text>
 
-            <GameCarousel data={forYouGames} />
+        <Pressable onPress={onSeeAll} hitSlop={10}>
+          <Text style={styles.seeAll}>Ver tudo</Text>
+        </Pressable>
+      </View>
 
-            <Text style={styles.sectionTitle}>Mais Alugados</Text>
+      <GameCarousel data={forYouGames} />
 
-            {mostRentedGames.length === 0 ? (
-                <Text style={styles.emptyText}>Ainda não há aluguéis suficientes para montar esse ranking.</Text>
-            ) : (
-                mostRentedGames.map((game) => (
-                    <GameCardVertical
-                        key={game.id}
-                        id={game.id} 
-                        title={game.title}
-                        location={game.isAvailableNow ? "Disponível" : "Indisponível"}
-                        rating={Number(game.rating ?? 0)}
-                        image={game.cover ?? null}
-                    />
-                ))
-            )}
-        </View>
-    );
+      <Text style={styles.sectionTitle}>Mais Alugados</Text>
+
+      {mostRentedGames.length === 0 ? (
+        <Text style={styles.emptyText}>
+          Ainda não há aluguéis suficientes para montar esse ranking.
+        </Text>
+      ) : (
+        mostRentedGames.map((game) => (
+          <GameCardVertical
+            key={game.id}
+            id={game.id}
+            title={game.title}
+            location={game.isAvailableNow ? "Disponível" : "Indisponível"}
+            rating={Number(game.rating ?? 0)}
+            image={game.cover ?? null}
+          />
+        ))
+      )}
+
+      {/* Espaço branco para não aparecer o fundo azul antes do footer */}
+      <View style={{ height: footerSpace + 20 }} />
+    </View>
+  );
 }
 
 const styles = StyleSheet.create({
-    card: {
-        backgroundColor: "#fff",
-        borderTopLeftRadius: 32,
-        borderTopRightRadius: 32,
-        padding: 19,
-        marginTop: 27,
-    },
+  card: {
+    backgroundColor: "#fff",
+    borderTopLeftRadius: 32,
+    borderTopRightRadius: 32,
+    padding: 19,
+    marginTop: 27,
+  },
 
-    sectionHeader: {
-        flexDirection: "row",
-        justifyContent: "space-between",
-        alignItems: "center",
-        marginBottom: 12,
-    },
+  sectionHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 12,
+  },
 
-    sectionTitle: {
-        fontSize: 20,
-        fontWeight: "700",
-        color: "#333",
-        marginVertical: 10,
-    },
+  sectionTitle: {
+    fontSize: 20,
+    fontWeight: "700",
+    color: "#333",
+    marginVertical: 10,
+  },
 
-    seeAll: {
-        color: "#4CAF50",
-        fontWeight: "800",
-        fontSize: 15
-    },
+  seeAll: {
+    color: "#FBBC04",
+    fontWeight: "900",
+    fontSize: 15,
+  },
 
-    emptyText: {
-        color: "#777",
-        fontWeight: "700",
-        marginTop: 6,
-    },
+  emptyText: {
+    color: "#777",
+    fontWeight: "700",
+    marginTop: 6,
+  },
 });

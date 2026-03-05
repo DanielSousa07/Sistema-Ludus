@@ -69,7 +69,6 @@ export default function NotificationsScreen() {
       const t = (n.type || "").toUpperCase();
 
       if (typeFilter === "rentals") return t.startsWith("RENTAL_");
-      if (typeFilter === "favorites") return t.startsWith("FAVORITE");
       if (typeFilter === "ratings") return t.startsWith("RATING");
       if (typeFilter === "verify") return t.includes("VERIFY") || t.includes("EMAIL") || t.includes("PHONE");
       if (typeFilter === "progress") return t.includes("LEVEL") || t.includes("POINTS");

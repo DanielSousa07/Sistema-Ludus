@@ -1,6 +1,6 @@
-import { DEFAULTS, FilterValues, useFilters } from "@/src/contexts/FiltersContext";
+import { DEFAULT_FILTERS, FilterValues, useFilters } from "@/src/contexts/FiltersContext";
 import { Ionicons } from "@expo/vector-icons";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { ScrollView, Text, TouchableOpacity, View } from "react-native";
 import { GameTimeRange } from "./GameTimeRange";
 import PriceRange from "./PriceRange";
@@ -8,56 +8,67 @@ import { styles } from "./styles";
 
 interface Props {
   onApply: (filters: FilterValues) => void;
-  initialValues: FilterValues;
+  initialValues?: FilterValues;
 }
 
 export function FilterCard({ onApply, initialValues }: Props) {
   const { resetFilters } = useFilters();
 
-  const [status, setStatus] = useState<FilterValues["status"]>(initialValues.status);
-  const [players, setPlayers] = useState<number | null>(initialValues.players);
-  const [age, setAge] = useState<number | null>(initialValues.age);
-  const [stars, setStars] = useState<number[]>(initialValues.stars);
+  const initial = initialValues ?? DEFAULT_FILTERS;
 
-  const [priceMin, setPriceMin] = useState<number>(initialValues.priceMin);
-  const [priceMax, setPriceMax] = useState<number>(initialValues.priceMax);
+  const [status, setStatus] = useState<FilterValues["status"]>(initial.status);
+  const [players, setPlayers] = useState<number | null>(initial.players);
+  const [age, setAge] = useState<number | null>(initial.age);
+  const [stars, setStars] = useState<number[]>(initial.stars);
 
-  const [timeMax, setTimeMax] = useState<number>(initialValues.timeMax);
+  const [priceMin, setPriceMin] = useState<number>(initial.priceMin);
+  const [priceMax, setPriceMax] = useState<number>(initial.priceMax);
+
+  const [timeMax, setTimeMax] = useState<number>(initial.timeMax);
+
+
+  useEffect(() => {
+    const v = initialValues ?? DEFAULT_FILTERS;
+    setStatus(v.status);
+    setPlayers(v.players);
+    setAge(v.age);
+    setStars(v.stars);
+    setPriceMin(v.priceMin);
+    setPriceMax(v.priceMax);
+    setTimeMax(v.timeMax);
+  }, [initialValues]);
 
   function toggleStar(value: number) {
     setStars((prev) => (prev.includes(value) ? prev.filter((s) => s !== value) : [...prev, value]));
   }
 
   const handleClear = () => {
-    
-    setStatus(DEFAULTS.status);
-    setPlayers(DEFAULTS.players);
-    setAge(DEFAULTS.age);
-    setStars(DEFAULTS.stars);
-    setPriceMin(DEFAULTS.priceMin);
-    setPriceMax(DEFAULTS.priceMax);
-    setTimeMax(DEFAULTS.timeMax);
+    setStatus(DEFAULT_FILTERS.status);
+    setPlayers(DEFAULT_FILTERS.players);
+    setAge(DEFAULT_FILTERS.age);
+    setStars(DEFAULT_FILTERS.stars);
+    setPriceMin(DEFAULT_FILTERS.priceMin);
+    setPriceMax(DEFAULT_FILTERS.priceMax);
+    setTimeMax(DEFAULT_FILTERS.timeMax);
 
-  
     resetFilters();
   };
 
   const canClear = useMemo(() => {
     return (
-      status !== DEFAULTS.status ||
-      players !== DEFAULTS.players ||
-      age !== DEFAULTS.age ||
+      status !== DEFAULT_FILTERS.status ||
+      players !== DEFAULT_FILTERS.players ||
+      age !== DEFAULT_FILTERS.age ||
       stars.length > 0 ||
-      priceMin !== DEFAULTS.priceMin ||
-      priceMax !== DEFAULTS.priceMax ||
-      timeMax !== DEFAULTS.timeMax
+      priceMin !== DEFAULT_FILTERS.priceMin ||
+      priceMax !== DEFAULT_FILTERS.priceMax ||
+      timeMax !== DEFAULT_FILTERS.timeMax
     );
   }, [status, players, age, stars, priceMin, priceMax, timeMax]);
 
   return (
-    <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 6, flexGrow: 1}}>
+    <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 6, flexGrow: 1 }}>
       <View style={styles.card}>
-      
         <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
           <Text style={styles.title}>Status do jogo</Text>
 
@@ -87,7 +98,6 @@ export function FilterCard({ onApply, initialValues }: Props) {
           ))}
         </View>
 
-        
         <PriceRange
           valueMin={priceMin}
           valueMax={priceMax}
@@ -127,11 +137,7 @@ export function FilterCard({ onApply, initialValues }: Props) {
           ))}
         </View>
 
-        
-        <GameTimeRange
-          valueMax={timeMax}
-          onChange={(max) => setTimeMax(max)}
-        />
+        <GameTimeRange valueMax={timeMax} onChange={(max) => setTimeMax(max)} />
 
         <Text style={styles.title}>Número de estrelas</Text>
         {[5, 4, 3, 2, 1].map((star) => (

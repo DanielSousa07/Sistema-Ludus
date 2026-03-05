@@ -6,7 +6,6 @@ import { styles } from "./styles";
 type Props = {
   valueMax: number;
   onChange: (max: number) => void;
-
   minLimit?: number;
   maxLimit?: number;
 };
@@ -17,7 +16,7 @@ export function GameTimeRange({
   minLimit = 15,
   maxLimit = 180,
 }: Props) {
-  const [max, setMax] = useState(valueMax);
+  const [max, setMax] = useState<number>(valueMax);
 
   useEffect(() => {
     setMax(valueMax);

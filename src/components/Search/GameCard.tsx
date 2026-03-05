@@ -20,6 +20,8 @@ type Props = {
   item: Game;
 };
 
+
+
 export default function GameCard({ item }: Props) {
   const router = useRouter()
   const isAvailable = item?.available !== false;

@@ -22,9 +22,14 @@ export type ManageGame = {
   cover?: string | null;
   price: number;
   available?: boolean;
+
+  description?: string | null;
+
+  howToPlayUrl?: string | null;
+  components?: string | null;
+
   rating?: number | null;
   ratingsCount?: number | null;
-  description?: string | null;
 };
 
 export default function EditGamesScreen() {
@@ -37,16 +42,23 @@ export default function EditGamesScreen() {
 
   const filtered = useMemo(() => {
     const term = q.trim().toLowerCase();
+
     if (!term) return games;
-    return games.filter((g) => g.title.toLowerCase().includes(term));
+
+    return games.filter((g) =>
+      g.title.toLowerCase().includes(term)
+    );
   }, [q, games]);
 
   async function fetchGames() {
     setLoading(true);
+
     try {
-      const res = await api.get<ManageGame[]>("/games", { params: { q: undefined } });
+      const res = await api.get<ManageGame[]>("/games");
+
       setGames(res.data || []);
-    } catch (e) {
+    } catch (err) {
+      console.log("Erro ao buscar jogos:", err);
       setGames([]);
     } finally {
       setLoading(false);
@@ -57,18 +69,31 @@ export default function EditGamesScreen() {
     fetchGames();
   }, []);
 
+  async function handleSave(next: Partial<ManageGame> & { id: string }) {
+    try {
+      const res = await api.patch(`/games/${next.id}`, next);
 
-async function handleSave(next: Partial<ManageGame> & { id: string }) {
-  const res = await api.patch(`/games/${next.id}`, next);
-  setGames((prev) => prev.map((g) => (g.id === next.id ? res.data : g)));
-  setSelected(null);
-}
+      setGames((prev) =>
+        prev.map((g) => (g.id === next.id ? res.data : g))
+      );
+
+      setSelected(null);
+    } catch (err) {
+      console.log("Erro ao salvar jogo:", err);
+    }
+  }
 
   async function handleDelete(id: string) {
-  await api.delete(`/games/${id}`);
-  setGames((prev) => prev.filter((g) => g.id !== id));
-  setSelected(null);
-}
+    try {
+      await api.delete(`/games/${id}`);
+
+      setGames((prev) => prev.filter((g) => g.id !== id));
+
+      setSelected(null);
+    } catch (err) {
+      console.log("Erro ao deletar jogo:", err);
+    }
+  }
 
   return (
     <View style={{ flex: 1 }}>
@@ -82,16 +107,19 @@ async function handleSave(next: Partial<ManageGame> & { id: string }) {
 
           <View style={{ flex: 1 }}>
             <Text style={styles.title}>Editar Jogos</Text>
-            <Text style={styles.subtitle}>Atualize preço, descrição e disponibilidade</Text>
+            <Text style={styles.subtitle}>
+              Atualize preço, descrição e disponibilidade
+            </Text>
           </View>
         </View>
 
         <View style={styles.searchBar}>
           <Ionicons name="search" size={20} color="#535353" />
+
           <TextInput
             style={styles.input}
             placeholder="Buscar jogo..."
-            placeholderTextColor="#333"
+            placeholderTextColor="#666"
             value={q}
             onChangeText={setQ}
             returnKeyType="search"
@@ -107,16 +135,25 @@ async function handleSave(next: Partial<ManageGame> & { id: string }) {
             data={filtered}
             keyExtractor={(item) => item.id}
             showsVerticalScrollIndicator={false}
-            contentContainerStyle={{ paddingBottom: 20 }}
+            contentContainerStyle={{ paddingBottom: 40 }}
             ListEmptyComponent={
               <View style={styles.emptyWrap}>
                 <Ionicons name="create-outline" size={46} color="#999" />
-                <Text style={styles.emptyTitle}>Nenhum jogo encontrado</Text>
-                <Text style={styles.emptySubtitle}>Tente buscar por outro nome.</Text>
+
+                <Text style={styles.emptyTitle}>
+                  Nenhum jogo encontrado
+                </Text>
+
+                <Text style={styles.emptySubtitle}>
+                  Tente buscar por outro nome.
+                </Text>
               </View>
             }
             renderItem={({ item }) => (
-              <ManageGameRow item={item} onPress={() => setSelected(item)} />
+              <ManageGameRow
+                item={item}
+                onPress={() => setSelected(item)}
+              />
             )}
           />
         )}
@@ -134,7 +171,13 @@ async function handleSave(next: Partial<ManageGame> & { id: string }) {
 }
 
 const styles = StyleSheet.create({
-  headerRow: { flexDirection: "row", alignItems: "center", gap: 12, marginBottom: 16 },
+  headerRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    marginBottom: 16,
+  },
+
   backBtn: {
     width: 44,
     height: 44,
@@ -143,8 +186,18 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-  title: { fontSize: 22, fontWeight: "700", color: "#31358B" },
-  subtitle: { fontSize: 14, color: "#535353", marginTop: 2 },
+
+  title: {
+    fontSize: 22,
+    fontWeight: "800",
+    color: "#31358B",
+  },
+
+  subtitle: {
+    fontSize: 14,
+    color: "#535353",
+    marginTop: 2,
+  },
 
   searchBar: {
     flexDirection: "row",
@@ -156,9 +209,31 @@ const styles = StyleSheet.create({
     marginBottom: 16,
     gap: 10,
   },
-  input: { flex: 1, fontSize: 15, color: "#333" },
 
-  emptyWrap: { flex: 1, alignItems: "center", justifyContent: "center", paddingTop: 28 },
-  emptyTitle: { marginTop: 12, fontSize: 16, fontWeight: "600", color: "#31358B" },
-  emptySubtitle: { marginTop: 6, fontSize: 14, color: "#777", textAlign: "center" },
+  input: {
+    flex: 1,
+    fontSize: 15,
+    color: "#333",
+  },
+
+  emptyWrap: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    paddingTop: 28,
+  },
+
+  emptyTitle: {
+    marginTop: 12,
+    fontSize: 16,
+    fontWeight: "700",
+    color: "#31358B",
+  },
+
+  emptySubtitle: {
+    marginTop: 6,
+    fontSize: 14,
+    color: "#777",
+    textAlign: "center",
+  },
 });

@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 
 import { BottomBar } from "@/src/components/GameDetails/BottomBar";
+import { GameComponents } from "@/src/components/GameDetails/GameComponents";
 import { GameDescription } from "@/src/components/GameDetails/GameDescription";
 import { GameFactsRow } from "@/src/components/GameDetails/GameFactsRow";
 import { GameHero } from "@/src/components/GameDetails/GameHero";
@@ -15,11 +16,16 @@ import { TermsRentModal } from "@/src/components/RentTerms/TermsRentModal";
 import LudusAlert from "@/src/components/common/LudusAlert/LudusAlert";
 import { useAuth } from "@/src/contexts/AuthContext";
 
+import { GameHowToPlay } from "@/src/components/GameDetails/GameHowToPlay";
+
 type GameDetails = {
   id: string;
   title: string;
   cover?: string | null;
+
   description?: string | null;
+  howToPlayUrl?: string | null; 
+
   price: number;
   available?: boolean;
   allowOriginalRental?: boolean;
@@ -57,7 +63,6 @@ export default function GameDetailsScreen() {
   );
 
   const [isFavorite, setIsFavorite] = useState(false);
-  const [favLoading, setFavLoading] = useState(false);
   const [favSaving, setFavSaving] = useState(false);
   const [favToastVisible, setFavToastVisible] = useState(false);
   const [favToastMessage, setFavToastMessage] = useState("");
@@ -74,7 +79,9 @@ export default function GameDetailsScreen() {
   const [savingRate, setSavingRate] = useState(false);
   const [canRate, setCanRate] = useState(false);
 
-  // Terms modal (primeiro aluguel)
+  const [watching, setWatching] = useState(false);
+  const [loadingWatch, setLoadingWatch] = useState(false);
+
   const [termsOpen, setTermsOpen] = useState(false);
   const [termsLoading, setTermsLoading] = useState(false);
   const pendingRentRef = useRef<null | { type: "original" } | { type: "copy"; copyId: string }>(null);
@@ -84,6 +91,9 @@ export default function GameDetailsScreen() {
   const [alertTitle, setAlertTitle] = useState("");
   const [alertMessage, setAlertMessage] = useState("");
 
+
+  const [tab, setTab] = useState<"description" | "components" | "howtoplay">("description");
+
   const showAlert = useCallback((type: AlertType, title: string, message: string) => {
     setAlertType(type);
     setAlertTitle(title);
@@ -91,13 +101,19 @@ export default function GameDetailsScreen() {
     setAlertVisible(true);
   }, []);
 
+  const hasHowToPlay = !!(game?.howToPlayUrl && game.howToPlayUrl.trim());
+
+  useEffect(() => {
+    if (tab === "howtoplay" && !hasHowToPlay) setTab("description");
+  }, [tab, hasHowToPlay]);
+
   const fetchDetails = useCallback(async () => {
     setLoading(true);
     setErrMsg(null);
     try {
       const res = await api.get(`/games/${id}`);
       setGame(res.data);
-    } catch (e: any) {
+    } catch {
       setErrMsg("Não foi possível carregar os detalhes.");
       setGame(null);
     } finally {
@@ -180,6 +196,36 @@ export default function GameDetailsScreen() {
     if (!game?.id) return;
 
     api
+      .get(`/games/${game.id}/watch`)
+      .then((res) => setWatching(!!res.data?.watching))
+      .catch(() => setWatching(false));
+  }, [game?.id]);
+
+  const toggleWatch = async () => {
+    if (!game) return;
+
+    setLoadingWatch(true);
+    try {
+      if (!watching) {
+        await api.post(`/games/${game.id}/watch`);
+        setWatching(true);
+        showAlert("success", "Aviso ativado", "Vamos te avisar quando o jogo voltar a ficar disponível.");
+      } else {
+        await api.delete(`/games/${game.id}/watch`);
+        setWatching(false);
+        showAlert("info", "Aviso removido", "Você não será mais notificado.");
+      }
+    } catch {
+      showAlert("error", "Erro", "Não foi possível atualizar o aviso.");
+    } finally {
+      setLoadingWatch(false);
+    }
+  };
+
+  useEffect(() => {
+    if (!game?.id) return;
+
+    api
       .get(`/games/${game.id}/can-rate`)
       .then((res) => setCanRate(!!res.data?.canRate))
       .catch(() => setCanRate(false));
@@ -189,11 +235,7 @@ export default function GameDetailsScreen() {
     if (!game) return;
 
     try {
-      await api.post("/rentals", {
-        gameId: game.id,
-      });
-
-      
+      await api.post("/rentals", { gameId: game.id });
       showAlert("success", "Aluguel realizado!", "Retire o seu jogo na Biblioteca IFMA - Campus Timon");
       setRentOpen(false);
       await fetchDetails();
@@ -232,11 +274,7 @@ export default function GameDetailsScreen() {
       if (!game) return;
 
       try {
-        await api.post("/rentals", {
-          gameId: game.id,
-          copyId,
-        });
-
+        await api.post("/rentals", { gameId: game.id, copyId });
         showAlert("success", "Exemplar alugado!", "Retire o seu jogo na Biblioteca IFMA - Campus Timon");
         setRentOpen(false);
         await fetchDetails();
@@ -272,18 +310,14 @@ export default function GameDetailsScreen() {
     setTermsLoading(true);
     try {
       await api.post("/rentals/accept-terms");
-
       setTermsOpen(false);
 
       const pending = pendingRentRef.current;
       pendingRentRef.current = null;
 
-      if (pending.type === "original") {
-        await rentOriginalNow();
-      } else {
-        await rentCopyNow(pending.copyId);
-      }
-    } catch (e) {
+      if (pending.type === "original") await rentOriginalNow();
+      else await rentCopyNow(pending.copyId);
+    } catch {
       showAlert("error", "Erro", "Não foi possível aceitar os termos. Tente novamente.");
     } finally {
       setTermsLoading(false);
@@ -305,7 +339,7 @@ export default function GameDetailsScreen() {
       }
 
       setRentOpen(true);
-    } catch (e: any) {
+    } catch {
       showAlert("error", "Erro", "Não foi possível carregar os exemplares disponíveis.");
     } finally {
       setRentLoading(false);
@@ -313,14 +347,11 @@ export default function GameDetailsScreen() {
   }, [game, rentOriginalNow, showAlert]);
 
   const checkFavorite = useCallback(async (gameId: string) => {
-    setFavLoading(true);
     try {
       const res = await api.get(`/favorites/check/${gameId}`);
       setIsFavorite(!!res.data?.isFavorite);
     } catch {
       setIsFavorite(false);
-    } finally {
-      setFavLoading(false);
     }
   }, []);
 
@@ -413,12 +444,38 @@ export default function GameDetailsScreen() {
                 longitude={-42.85378}
               />
 
-              <GameDescription description={game.description} />
+              <View style={styles.tabs}>
+                <Pressable onPress={() => setTab("description")} style={styles.tab}>
+                  <Text style={[styles.tabText, tab === "description" && styles.tabActive]}>Descrição</Text>
+                </Pressable>
+
+                <Pressable onPress={() => setTab("components")} style={styles.tab}>
+                  <Text style={[styles.tabText, tab === "components" && styles.tabActive]}>Componentes</Text>
+                </Pressable>
+
+                {hasHowToPlay && (
+                  <Pressable onPress={() => setTab("howtoplay")} style={styles.tab}>
+                    <Text style={[styles.tabText, tab === "howtoplay" && styles.tabActive]}>Como jogar</Text>
+                  </Pressable>
+                )}
+              </View>
+
+              {tab === "description" && <GameDescription description={game.description} />}
+
+              {tab === "components" && <GameComponents gameId={game.id} />}
+
+              {tab === "howtoplay" && hasHowToPlay && (
+                <GameHowToPlay url={game.howToPlayUrl} title={game.title} />
+              )}
             </ScrollView>
           </View>
 
           <BottomBar
             price={game.price}
+            unavailable={!game.available}
+            watching={watching}
+            loadingWatch={loadingWatch}
+            onToggleWatch={toggleWatch}
             onPressRent={() => {
               if (isAdmin) {
                 showAlert("info", "Ação bloqueada", "Administrador não pode alugar jogos.");
@@ -484,6 +541,7 @@ export default function GameDetailsScreen() {
 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: "#0A1F5C" },
+
   sheet: {
     flex: 1,
     backgroundColor: "#fff",
@@ -494,6 +552,7 @@ const styles = StyleSheet.create({
     paddingTop: 12,
     overflow: "hidden",
   },
+
   center: { flex: 1, alignItems: "center", justifyContent: "center", backgroundColor: "#fff" },
 
   toast: {
@@ -501,7 +560,7 @@ const styles = StyleSheet.create({
     bottom: 100,
     left: 20,
     right: 20,
-    backgroundColor: "#1F1F1F",
+    backgroundColor: "#0A0A0A",
     paddingVertical: 14,
     paddingHorizontal: 18,
     borderRadius: 16,
@@ -512,4 +571,15 @@ const styles = StyleSheet.create({
   },
   toastText: { color: "#FFF", fontWeight: "700", fontSize: 14 },
   toastAction: { color: "#FBBC04", fontWeight: "900", fontSize: 14 },
+
+  tabs: {
+    flexDirection: "row",
+    gap: 18,
+    marginTop: 18,
+    borderBottomWidth: 1,
+    borderBottomColor: "rgba(10,31,92,0.10)",
+  },
+  tab: { paddingBottom: 10 },
+  tabText: { fontSize: 16, fontWeight: "800", color: "#8B8EA1" },
+  tabActive: { color: "#0A1F5C" },
 });
