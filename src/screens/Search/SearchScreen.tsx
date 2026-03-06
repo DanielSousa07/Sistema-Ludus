@@ -98,6 +98,7 @@ export default function SearchScreen() {
           borderTopLeftRadius: 32,
           borderTopRightRadius: 32,
           paddingTop: 18,
+          paddingBottom: 24,
           overflow: "hidden",
         }}
       >

@@ -7,15 +7,13 @@ type Role = "USER" | "ADMIN" | string;
 
 export type AuthUser = {
   id: string;
-  nome?: string; 
-  name?: string; 
+  nome?: string;
+  name?: string;
   email: string;
   phone?: string | null;
   role?: Role;
-
   phoneVerified?: boolean;
   emailVerified?: boolean;
-
   points?: number;
   level?: number;
   authProvider?: string;
@@ -32,15 +30,10 @@ type GoogleAuthResult =
 type AuthContextValue = {
   user: AuthUser | null;
   isLoading: boolean;
-
   login: (emailOrPhone: string, senha: string) => Promise<AuthResult>;
   register: (name: string, email: string, phone: string, senha: string) => Promise<AuthResult>;
   logout: () => Promise<void>;
-
-  
   signInWithToken: (token: string, userData: AuthUser) => Promise<void>;
-
-  
   loginGoogle: (idToken: string) => Promise<GoogleAuthResult>;
 };
 
@@ -73,24 +66,39 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     loadStorageData();
   }, []);
 
-useEffect(() => {
-  const detach = attachNotificationListeners();
-  return detach;
-}, []);
+  useEffect(() => {
+    const detach = attachNotificationListeners();
+    return detach;
+  }, []);
 
-async function signInWithToken(token: string, userData: AuthUser) {
-  api.defaults.headers.common["Authorization"] = `Bearer ${token}`;
-  await SecureStore.setItemAsync("token", token);
-  await SecureStore.setItemAsync("user", JSON.stringify(userData));
-  setUser(userData);
+  async function signInWithToken(token: string, userData: AuthUser) {
+    api.defaults.headers.common["Authorization"] = `Bearer ${token}`;
 
-  try {
-    const pushToken = await registerForPush(userData.id);
-    console.log("Push Token registrado com sucesso:", pushToken);
-  } catch (error) {
-    console.error("Falha crítica ao registrar Push Token:", error);
+    await SecureStore.setItemAsync("token", token);
+    await SecureStore.setItemAsync("user", JSON.stringify(userData));
+
+    setUser(userData);
+
+    try {
+      const pushToken = await registerForPush(userData.id);
+      if (pushToken) {
+        console.log("Push Token registrado com sucesso:", pushToken);
+      } else {
+        console.log("Push token não registrado: permissão negada ou indisponível.");
+      }
+    } catch (error: any) {
+      const status = error?.response?.status;
+      const code = error?.response?.data?.code;
+
+
+      if (status === 403 || code === "ACCOUNT_NOT_VERIFIED") {
+        console.log("Push token adiado até a conta ter ao menos um fator verificado.");
+      } else {
+        console.log("Não foi possível registrar push token agora:", error?.message || error);
+      }
+    }
   }
-}
+
   async function login(emailOrPhone: string, senha: string): Promise<AuthResult> {
     try {
       const response = await api.post("/auth/login", {
@@ -104,7 +112,6 @@ async function signInWithToken(token: string, userData: AuthUser) {
       };
 
       await signInWithToken(token, userData);
-
       return { success: true };
     } catch (error: any) {
       let message = "Erro ao conectar com o servidor";
@@ -138,7 +145,9 @@ async function signInWithToken(token: string, userData: AuthUser) {
         message: "Conta criada, mas não foi possível fazer login automaticamente.",
       };
     } catch (error: any) {
-      const errorMessage = error?.response?.data?.error || "Erro ao conectar com o servidor";
+      const errorMessage =
+        error?.response?.data?.error || "Erro ao conectar com o servidor";
+
       console.error("Erro no registro:", errorMessage);
 
       return {
@@ -148,7 +157,6 @@ async function signInWithToken(token: string, userData: AuthUser) {
     }
   }
 
-  
   async function loginGoogle(idToken: string): Promise<GoogleAuthResult> {
     try {
       const res = await api.post("/auth/google", { idToken });
@@ -161,7 +169,10 @@ async function signInWithToken(token: string, userData: AuthUser) {
 
       await signInWithToken(token, userData);
 
-      return { success: true, needsPhoneVerification: !!needsPhoneVerification };
+      return {
+        success: true,
+        needsPhoneVerification: !!needsPhoneVerification,
+      };
     } catch (error: any) {
       const message =
         error?.response?.data?.error || "Falha ao autenticar com Google.";
