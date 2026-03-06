@@ -18,19 +18,18 @@ export function GameMeta({ title, avgRating, ratingsCount, onPressRate }: Props)
   return (
     <View style={styles.wrap}>
       <View style={styles.ratingRow}>
-        <View style={{ flexDirection: "row", gap: 6, alignItems: "center" }}>
+        <View style={styles.ratingLeft}>
           {Array.from({ length: 5 }).map((_, i) => (
             <Ionicons
               key={i}
               name={i < rounded ? "star" : "star-outline"}
-              size={22}
+              size={18}
               color={i < rounded ? "#FFC107" : "#BDBDBD"}
             />
           ))}
 
           <Text style={styles.ratingText}>
-            {display}{" "}
-            <Text style={styles.countText}>({count})</Text>
+            {display} <Text style={styles.countText}>({count})</Text>
           </Text>
         </View>
 
@@ -45,27 +44,56 @@ export function GameMeta({ title, avgRating, ratingsCount, onPressRate }: Props)
 }
 
 const styles = StyleSheet.create({
-  wrap: { paddingTop: 14, paddingBottom: 8 },
+  wrap: {
+    paddingTop: 10,
+    paddingBottom: 4,
+  },
+
   ratingRow: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
   },
-  ratingText: { marginLeft: 6, fontSize: 16, fontWeight: "800", color: "#6A6A6A" },
-  countText: { fontWeight: "900", color: "#8B8EA1" },
+
+  ratingLeft: {
+    flexDirection: "row",
+    gap: 4,
+    alignItems: "center",
+    flexShrink: 1,
+  },
+
+  ratingText: {
+    marginLeft: 4,
+    fontSize: 13,
+    fontWeight: "800",
+    color: "#6A6A6A",
+  },
+
+  countText: {
+    fontWeight: "800",
+    color: "#8B8EA1",
+  },
+
   rateBtn: {
     backgroundColor: "#F1F3F7",
-    paddingHorizontal: 14,
-    height: 40,
-    borderRadius: 14,
+    paddingHorizontal: 12,
+    height: 34,
+    borderRadius: 12,
     alignItems: "center",
     justifyContent: "center",
   },
-  rateBtnText: { fontWeight: "800", color: "#0A1F5C" },
+
+  rateBtnText: {
+    fontSize: 12.5,
+    fontWeight: "800",
+    color: "#0A1F5C",
+  },
+
   title: {
-    marginTop: 14,
-    fontSize: 34,
+    marginTop: 10,
+    fontSize: 24,
+    lineHeight: 30,
     fontWeight: "900",
-    color: "#555",
+    color: "#444",
   },
 });

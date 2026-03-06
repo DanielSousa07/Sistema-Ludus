@@ -1,13 +1,10 @@
 import { Ionicons } from "@expo/vector-icons";
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 type Props = {
   price: number;
-
-  
   onPressRent?: () => void;
-
-  
   unavailable?: boolean;
   watching?: boolean;
   loadingWatch?: boolean;
@@ -22,10 +19,13 @@ export function BottomBar({
   loadingWatch,
   onToggleWatch,
 }: Props) {
+
+  const insets = useSafeAreaInsets();
+
   const priceText = Number(price ?? 0).toFixed(2);
 
   return (
-    <View style={styles.wrap}>
+    <View style={[styles.wrap, { paddingBottom: insets.bottom + 10 }]}>
       <View style={styles.inner}>
         <Text style={styles.price}>
           R${priceText} <Text style={styles.perDay}>/ dia</Text>
@@ -65,7 +65,6 @@ const styles = StyleSheet.create({
     right: 0,
     bottom: 0,
     paddingHorizontal: 18,
-    paddingBottom: 18,
     paddingTop: 10,
     backgroundColor: "transparent",
   },

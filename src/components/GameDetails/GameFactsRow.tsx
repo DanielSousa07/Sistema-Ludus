@@ -20,7 +20,7 @@ export function GameFactsRow({ players, time, age }: Props) {
     <View style={styles.row}>
       {facts.map((f, idx) => (
         <View key={idx} style={styles.pill}>
-          <Ionicons name={f.icon} size={18} color="#6A6A6A" />
+          <Ionicons name={f.icon} size={15} color="#6A6A6A" />
           <Text style={styles.text}>{f.label}</Text>
         </View>
       ))}
@@ -32,18 +32,22 @@ const styles = StyleSheet.create({
   row: {
     flexDirection: "row",
     flexWrap: "wrap",
-    gap: 10,
-    marginTop: 10,
-    marginBottom: 10,
+    gap: 8,
+    marginTop: 8,
+    marginBottom: 8,
   },
   pill: {
     flexDirection: "row",
-    gap: 10,
+    gap: 7,
     alignItems: "center",
-    backgroundColor: "#F3F3F3",
-    paddingHorizontal: 12,
-    height: 44,
-    borderRadius: 14,
+    backgroundColor: "#F5F5F7",
+    paddingHorizontal: 10,
+    height: 38,
+    borderRadius: 12,
   },
-  text: { fontSize: 14, fontWeight: "700", color: "#6A6A6A" },
+  text: {
+    fontSize: 12.5,
+    fontWeight: "700",
+    color: "#6A6A6A",
+  },
 });

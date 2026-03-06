@@ -2,12 +2,14 @@ import { api } from "@/src/services/api";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 import { BottomBar } from "@/src/components/GameDetails/BottomBar";
 import { GameComponents } from "@/src/components/GameDetails/GameComponents";
 import { GameDescription } from "@/src/components/GameDetails/GameDescription";
 import { GameFactsRow } from "@/src/components/GameDetails/GameFactsRow";
 import { GameHero } from "@/src/components/GameDetails/GameHero";
+import { GameHowToPlay } from "@/src/components/GameDetails/GameHowToPlay";
 import { GameLocationPreview } from "@/src/components/GameDetails/GameLocationPreview";
 import { GameMeta } from "@/src/components/GameDetails/GameMeta";
 import { RateModal } from "@/src/components/GameDetails/RateModal";
@@ -15,8 +17,7 @@ import { RentModal } from "@/src/components/GameDetails/RentModal";
 import { TermsRentModal } from "@/src/components/RentTerms/TermsRentModal";
 import LudusAlert from "@/src/components/common/LudusAlert/LudusAlert";
 import { useAuth } from "@/src/contexts/AuthContext";
-
-import { GameHowToPlay } from "@/src/components/GameDetails/GameHowToPlay";
+import { Ionicons } from "@expo/vector-icons";
 
 type GameDetails = {
   id: string;
@@ -24,7 +25,7 @@ type GameDetails = {
   cover?: string | null;
 
   description?: string | null;
-  howToPlayUrl?: string | null; 
+  howToPlayUrl?: string | null;
 
   price: number;
   available?: boolean;
@@ -90,7 +91,6 @@ export default function GameDetailsScreen() {
   const [alertType, setAlertType] = useState<AlertType>("info");
   const [alertTitle, setAlertTitle] = useState("");
   const [alertMessage, setAlertMessage] = useState("");
-
 
   const [tab, setTab] = useState<"description" | "components" | "howtoplay">("description");
 
@@ -385,7 +385,7 @@ export default function GameDetailsScreen() {
   };
 
   return (
-    <View style={styles.root}>
+    <SafeAreaView style={styles.root} edges={["bottom"]}>
       {loading ? (
         <View style={styles.center}>
           <ActivityIndicator />
@@ -417,7 +417,10 @@ export default function GameDetailsScreen() {
           />
 
           <View style={styles.sheet}>
-            <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 120 }}>
+            <ScrollView
+              showsVerticalScrollIndicator={false}
+              contentContainerStyle={{ paddingBottom: 120 }}
+            >
               <GameMeta
                 title={game.title}
                 avgRating={avgRating}
@@ -445,17 +448,56 @@ export default function GameDetailsScreen() {
               />
 
               <View style={styles.tabs}>
-                <Pressable onPress={() => setTab("description")} style={styles.tab}>
-                  <Text style={[styles.tabText, tab === "description" && styles.tabActive]}>Descrição</Text>
+                <Pressable
+                  onPress={() => setTab("description")}
+                  style={[styles.tab, tab === "description" && styles.tabBlue]}
+                >
+                  <Ionicons
+                    name="document-text-outline"
+                    size={16}
+                    color={tab === "description" ? "#fff" : "#7A8194"}
+                  />
+                  <Text
+                    numberOfLines={1}
+                    style={[styles.tabText, tab === "description" && styles.tabTextActive]}
+                  >
+                    Descrição
+                  </Text>
                 </Pressable>
 
-                <Pressable onPress={() => setTab("components")} style={styles.tab}>
-                  <Text style={[styles.tabText, tab === "components" && styles.tabActive]}>Componentes</Text>
+                <Pressable
+                  onPress={() => setTab("components")}
+                  style={[styles.tab, tab === "components" && styles.tabYellow]}
+                >
+                  <Ionicons
+                    name="cube-outline"
+                    size={16}
+                    color={tab === "components" ? "#fff" : "#7A8194"}
+                  />
+                  <Text
+                    numberOfLines={1}
+                    style={[styles.tabText, tab === "components" && styles.tabTextActive]}
+                  >
+                    Componentes
+                  </Text>
                 </Pressable>
 
                 {hasHowToPlay && (
-                  <Pressable onPress={() => setTab("howtoplay")} style={styles.tab}>
-                    <Text style={[styles.tabText, tab === "howtoplay" && styles.tabActive]}>Como jogar</Text>
+                  <Pressable
+                    onPress={() => setTab("howtoplay")}
+                    style={[styles.tab, tab === "howtoplay" && styles.tabRed]}
+                  >
+                    <Ionicons
+                      name="play-circle-outline"
+                      size={16}
+                      color={tab === "howtoplay" ? "#fff" : "#7A8194"}
+                    />
+                    <Text
+                      numberOfLines={1}
+                      style={[styles.tabText, tab === "howtoplay" && styles.tabTextActive]}
+                    >
+                      Como jogar
+                    </Text>
                   </Pressable>
                 )}
               </View>
@@ -535,51 +577,100 @@ export default function GameDetailsScreen() {
           />
         </>
       )}
-    </View>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: "#0A1F5C" },
+  root: {
+    flex: 1,
+    backgroundColor: "#ffffff",
+  },
 
   sheet: {
     flex: 1,
     backgroundColor: "#fff",
-    borderTopLeftRadius: 32,
-    borderTopRightRadius: 32,
-    marginTop: -22,
-    paddingHorizontal: 18,
-    paddingTop: 12,
+    borderTopLeftRadius: 26,
+    borderTopRightRadius: 26,
+    marginTop: -10,
+    paddingHorizontal: 16,
+    paddingTop: 10,
     overflow: "hidden",
   },
 
-  center: { flex: 1, alignItems: "center", justifyContent: "center", backgroundColor: "#fff" },
+  center: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "#fff",
+  },
 
   toast: {
     position: "absolute",
-    bottom: 100,
-    left: 20,
-    right: 20,
+    bottom: 96,
+    left: 18,
+    right: 18,
     backgroundColor: "#0A0A0A",
-    paddingVertical: 14,
-    paddingHorizontal: 18,
-    borderRadius: 16,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderRadius: 14,
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
     elevation: 8,
   },
-  toastText: { color: "#FFF", fontWeight: "700", fontSize: 14 },
-  toastAction: { color: "#FBBC04", fontWeight: "900", fontSize: 14 },
+
+  toastText: {
+    color: "#FFF",
+    fontWeight: "700",
+    fontSize: 13,
+  },
+
+  toastAction: {
+    color: "#FBBC04",
+    fontWeight: "900",
+    fontSize: 13,
+  },
 
   tabs: {
     flexDirection: "row",
-    gap: 18,
-    marginTop: 18,
-    borderBottomWidth: 1,
-    borderBottomColor: "rgba(10,31,92,0.10)",
+    marginTop: 14,
+    gap: 6,
   },
-  tab: { paddingBottom: 10 },
-  tabText: { fontSize: 16, fontWeight: "800", color: "#8B8EA1" },
-  tabActive: { color: "#0A1F5C" },
+
+  tab: {
+    flex: 1,
+    minHeight: 38,
+    paddingVertical: 8,
+    paddingHorizontal: 6,
+    borderRadius: 12,
+    alignItems: "center",
+    justifyContent: "center",
+    flexDirection: "row",
+    gap: 4,
+    backgroundColor: "#F2F4F8",
+  },
+
+  tabText: {
+    flexShrink: 1,
+    fontSize: 11,
+    fontWeight: "800",
+    color: "#7A8194",
+  },
+
+  tabTextActive: {
+    color: "#fff",
+  },
+
+  tabBlue: {
+    backgroundColor: "#0A1F5C",
+  },
+
+  tabYellow: {
+    backgroundColor: "#FBBC04",
+  },
+
+  tabRed: {
+    backgroundColor: "#E53935",
+  },
 });
