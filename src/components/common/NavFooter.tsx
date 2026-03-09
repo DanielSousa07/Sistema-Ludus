@@ -36,7 +36,7 @@ export function NavFooter() {
         <Ionicons name="bag" size={26} color={getColor("/rentals")} />
       </TouchableOpacity>
 
-      <TouchableOpacity >
+      <TouchableOpacity onPress={() => router.push("/profile")}>
         <Ionicons name="person" size={26} color={getColor("/profile")} />
       </TouchableOpacity>
 

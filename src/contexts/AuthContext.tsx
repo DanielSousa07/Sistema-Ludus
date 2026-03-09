@@ -17,6 +17,9 @@ export type AuthUser = {
   points?: number;
   level?: number;
   authProvider?: string;
+
+  avatar?: string | null;
+  picture?: string | null;
 };
 
 type AuthResult =
@@ -35,6 +38,7 @@ type AuthContextValue = {
   logout: () => Promise<void>;
   signInWithToken: (token: string, userData: AuthUser) => Promise<void>;
   loginGoogle: (idToken: string) => Promise<GoogleAuthResult>;
+  updateUser: (patch: Partial<AuthUser>) => Promise<void>;
 };
 
 const AuthContext = createContext<AuthContextValue>({} as AuthContextValue);
@@ -98,6 +102,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
     }
   }
+
+  async function updateUser(patch: Partial<AuthUser>) {
+    setUser((prev) => {
+      if(!prev) return prev;
+      const next = {...prev, ...patch} 
+      SecureStore.setItemAsync("user", JSON.stringify(next)).catch(() => {});
+      return next;
+    });
+
+  };
 
   async function login(emailOrPhone: string, senha: string): Promise<AuthResult> {
     try {
@@ -199,6 +213,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       isLoading,
       signInWithToken,
       loginGoogle,
+      updateUser,
     }),
     [user, isLoading]
   );
