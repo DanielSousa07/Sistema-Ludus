@@ -123,7 +123,7 @@ export default function ProfileScreen() {
             <ProfileMenuItem
               icon="person-outline"
               title="Conta"
-              onPress={() => Alert.alert("Conta", "Tela de conta em breve.")}
+              onPress={() => router.push("/profile/account")}
             />
 
             <ProfileMenuItem
@@ -144,6 +144,12 @@ export default function ProfileScreen() {
               onPress={() => Alert.alert("Sobre nós", "Tela de sobre nós em breve.")}
             />
           </View>
+
+          <ProfileMenuItem
+          icon="cog-outline"
+          title="Configurações"
+          onPress={() => Alert.alert("Config", "Tela em breve")}
+          />
 
           <Pressable onPress={handleLogout} style={styles.logoutBtn}>
             <Text style={styles.logoutText}>Sair da conta</Text>

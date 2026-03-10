@@ -42,6 +42,7 @@ export default function Layout() {
               <Stack.Screen name="search" />
               <Stack.Screen name="filter" />
               <Stack.Screen name="game/[id]" />
+              <Stack.Screen name="profile/account" />
             </Stack>
           </FiltersProvider>
         </AuthProvider>

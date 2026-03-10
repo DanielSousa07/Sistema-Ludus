@@ -79,7 +79,7 @@ async function handleAddGame(game: LudopediaGame) {
       ludopediaId: game.id,
       title: game.name,
       cover: game.image,
-      price: 15.0,
+      price: 3.00,
       description: game.description,
       rating: game.rating,
       minPlayers: game.minPlayers,
