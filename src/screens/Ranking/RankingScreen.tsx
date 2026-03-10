@@ -1,22 +1,24 @@
+import BackButton from "@/src/components/common/BackButton";
+import LoginBackground from "@/src/components/Login/LoginBackground";
 import { api } from "@/src/services/api";
 import { Ionicons } from "@expo/vector-icons";
 import { useEffect, useMemo, useState } from "react";
 import {
-    ActivityIndicator,
-    FlatList,
-    Pressable,
-    RefreshControl,
-    StyleSheet,
-    Text,
-    View,
+  ActivityIndicator,
+  FlatList,
+  Image,
+  Pressable,
+  RefreshControl,
+  StyleSheet,
+  Text,
+  View,
 } from "react-native";
 
-import BackButton from "@/src/components/common/BackButton";
-import LoginBackground from "@/src/components/Login/LoginBackground";
-
-const RED = "#B3193A";     
-const BLUE = "#04096E";    
+const RED = "#B3193A";
+const BLUE = "#04096E";
 const YELLOW = "#FFC107";
+
+const DEFAULT_AVATAR = require("../../../assets/profile-default.png");
 
 type LeaderRow = {
   rank: number;
@@ -25,6 +27,8 @@ type LeaderRow = {
   points: number;
   level: number;
   levelName?: string;
+  avatar?: string | null;
+  picture?: string | null;
 };
 
 type MeRow = {
@@ -34,20 +38,55 @@ type MeRow = {
   level: number;
   levelName?: string;
   rank: number;
+  avatar?: string | null;
+  picture?: string | null;
 };
-
-function initials(name: string) {
-  const parts = String(name ?? "").trim().split(/\s+/).filter(Boolean);
-  if (parts.length === 0) return "U";
-  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
-  return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
-}
 
 function rankBadgeStyle(rank: number) {
   if (rank === 1) return { bg: "rgba(255,193,7,0.22)", fg: "#8A5B00" };
   if (rank === 2) return { bg: "rgba(255,193,7,0.14)", fg: "#8A5B00" };
   if (rank === 3) return { bg: "rgba(179,25,58,0.12)", fg: RED };
   return { bg: "rgba(4,9,110,0.08)", fg: BLUE };
+}
+
+function Avatar({
+  uri,
+  picture,
+  size = 38,
+  radius = 14,
+}: {
+  uri?: string | null;
+  picture?: string | null;
+  size?: number;
+  radius?: number;
+}) {
+  const sourceUri = uri || picture || null;
+
+  if (sourceUri) {
+    return (
+      <Image
+        source={{ uri: sourceUri }}
+        style={{
+          width: size,
+          height: size,
+          borderRadius: radius,
+          backgroundColor: "#EAEAEA",
+        }}
+      />
+    );
+  }
+
+  return (
+    <Image
+      source={DEFAULT_AVATAR}
+      style={{
+        width: size,
+        height: size,
+        borderRadius: radius,
+        backgroundColor: "#EAEAEA",
+      }}
+    />
+  );
 }
 
 export default function RankingScreen() {
@@ -89,17 +128,22 @@ export default function RankingScreen() {
 
   const myBox = useMemo(() => {
     if (!me) return null;
+
     const lvl = me.levelName ?? `Nível ${me.level}`;
 
     return (
       <View style={styles.meBox}>
-        <View style={{ flex: 1 }}>
-          <Text style={styles.meTitle} numberOfLines={1}>
-            {me.name}
-          </Text>
-          <Text style={styles.meSub} numberOfLines={1}>
-            {lvl} • posição #{me.rank}
-          </Text>
+        <View style={styles.meLeft}>
+          <Avatar uri={me.avatar} picture={me.picture} size={48} radius={20} />
+
+          <View style={{ flex: 1 }}>
+            <Text style={styles.meTitle} numberOfLines={1}>
+              {me.name}
+            </Text>
+            <Text style={styles.meSub} numberOfLines={1}>
+              {lvl} • posição #{me.rank}
+            </Text>
+          </View>
         </View>
 
         <View style={styles.mePtsPill}>
@@ -112,32 +156,27 @@ export default function RankingScreen() {
 
   return (
     <View style={styles.page}>
-
       <LoginBackground />
-
-
       <BackButton />
-      
-      <View style={styles.card}>
 
+      <View style={styles.card}>
         <Pressable style={styles.redBtn} onPress={() => setShowRules((s) => !s)}>
           <Ionicons name="information-circle" size={18} color="#fff" />
           <Text style={styles.redBtnText}>Como ganhar pontos</Text>
         </Pressable>
 
-        
         {showRules && (
           <View style={styles.rulesBox}>
             <Text style={styles.rulesTitle}>Regras rápidas</Text>
 
             <View style={styles.ruleRow}>
               <View style={[styles.dot, { backgroundColor: YELLOW }]} />
-              <Text style={styles.ruleText}>+10 pts ao criar um aluguel</Text>
+              <Text style={styles.ruleText}>+7 pts ao finalizar um aluguel</Text>
             </View>
 
             <View style={styles.ruleRow}>
               <View style={[styles.dot, { backgroundColor: RED }]} />
-              <Text style={styles.ruleText}>+5 pts quando o ADMIN devolve</Text>
+              <Text style={styles.ruleText}>+5 pts ao delvolver</Text>
             </View>
 
             <View style={styles.ruleRow}>
@@ -182,9 +221,7 @@ export default function RankingScreen() {
                     <Text style={[styles.rankBadgeText, { color: badge.fg }]}>{item.rank}</Text>
                   </View>
 
-                  <View style={styles.avatar}>
-                    <Text style={styles.avatarText}>{initials(item.name)}</Text>
-                  </View>
+                  <Avatar uri={item.avatar} picture={item.picture} radius={150}/>
 
                   <View style={{ flex: 1 }}>
                     <Text style={styles.name} numberOfLines={1}>
@@ -216,20 +253,9 @@ const styles = StyleSheet.create({
     backgroundColor: "#fff",
   },
 
-  topTitle: {
-    position: "absolute",
-    top: 60,
-    left: 0,
-    right: 0,
-    alignItems: "center",
-    paddingHorizontal: 90, 
-  },
-  h1: { color: "#fff", fontSize: 20, fontWeight: "900" },
-  h2: { color: "rgba(255,255,255,0.85)", marginTop: 3, fontSize: 12, fontWeight: "600" },
-
   card: {
     flex: 1,
-    marginTop: 120, 
+    marginTop: 120,
     backgroundColor: "#fff",
     borderTopLeftRadius: 32,
     borderTopRightRadius: 32,
@@ -248,7 +274,12 @@ const styles = StyleSheet.create({
     gap: 8,
     marginBottom: 10,
   },
-  redBtnText: { color: "#fff", fontWeight: "900", fontSize: 14 },
+
+  redBtnText: {
+    color: "#fff",
+    fontWeight: "900",
+    fontSize: 14,
+  },
 
   rulesBox: {
     backgroundColor: "rgba(4,9,110,0.04)",
@@ -258,14 +289,48 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: "rgba(0,0,0,0.05)",
   },
-  rulesTitle: { fontWeight: "900", color: "#222", marginBottom: 8 },
-  ruleRow: { flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 6 },
-  dot: { width: 8, height: 8, borderRadius: 999 },
-  ruleText: { color: "#444", fontWeight: "700", fontSize: 12 },
 
-  center: { paddingVertical: 26, alignItems: "center" },
-  centerText: { marginTop: 10, color: "#666", fontWeight: "700" },
-  errText: { color: RED, fontWeight: "900", textAlign: "center" },
+  rulesTitle: {
+    fontWeight: "900",
+    color: "#222",
+    marginBottom: 8,
+  },
+
+  ruleRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    marginBottom: 6,
+  },
+
+  dot: {
+    width: 8,
+    height: 8,
+    borderRadius: 999,
+  },
+
+  ruleText: {
+    color: "#444",
+    fontWeight: "700",
+    fontSize: 12,
+  },
+
+  center: {
+    paddingVertical: 26,
+    alignItems: "center",
+  },
+
+  centerText: {
+    marginTop: 10,
+    color: "#666",
+    fontWeight: "700",
+  },
+
+  errText: {
+    color: RED,
+    fontWeight: "900",
+    textAlign: "center",
+  },
 
   retryBtn: {
     marginTop: 12,
@@ -274,7 +339,11 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     borderRadius: 14,
   },
-  retryText: { color: BLUE, fontWeight: "900" },
+
+  retryText: {
+    color: BLUE,
+    fontWeight: "900",
+  },
 
   meBox: {
     backgroundColor: BLUE,
@@ -284,9 +353,28 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "space-between",
     marginBottom: 12,
+    gap: 10,
   },
-  meTitle: { color: "#fff", fontWeight: "900" },
-  meSub: { color: "rgba(255,255,255,0.85)", marginTop: 2, fontSize: 12, fontWeight: "600" },
+
+  meLeft: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+  },
+
+  meTitle: {
+    color: "#fff",
+    fontWeight: "900",
+  },
+
+  meSub: {
+    color: "rgba(255,255,255,0.85)",
+    marginTop: 2,
+    fontSize: 12,
+    fontWeight: "600",
+  },
+
   mePtsPill: {
     flexDirection: "row",
     alignItems: "center",
@@ -296,9 +384,18 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     borderRadius: 999,
   },
-  mePtsText: { color: "#fff", fontWeight: "900" },
 
-  sectionTitle: { fontSize: 14, fontWeight: "900", color: "#222", marginBottom: 10 },
+  mePtsText: {
+    color: "#fff",
+    fontWeight: "900",
+  },
+
+  sectionTitle: {
+    fontSize: 14,
+    fontWeight: "900",
+    color: "#222",
+    marginBottom: 10,
+  },
 
   row: {
     flexDirection: "row",
@@ -311,6 +408,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: "rgba(0,0,0,0.06)",
   },
+
   rowMe: {
     borderColor: "rgba(179,25,58,0.28)",
     backgroundColor: "rgba(179,25,58,0.04)",
@@ -323,29 +421,35 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-  rankBadgeText: { fontWeight: "900" },
 
-  avatar: {
-    width: 38,
-    height: 38,
-    borderRadius: 14,
-    backgroundColor: "rgba(4,9,110,0.10)",
-    alignItems: "center",
-    justifyContent: "center",
+  rankBadgeText: {
+    fontWeight: "900",
   },
-  avatarText: { fontWeight: "900", color: BLUE },
 
-  name: { fontWeight: "900", color: "#222" },
-  meta: { color: "#777", fontSize: 12, marginTop: 2, fontWeight: "600" },
+  name: {
+    fontWeight: "900",
+    color: "#222",
+  },
+
+  meta: {
+    color: "#777",
+    fontSize: 12,
+    marginTop: 2,
+    fontWeight: "600",
+  },
 
   pointsPill: {
     flexDirection: "row",
     alignItems: "center",
     gap: 6,
-    backgroundColor: "rgba(255,193,7,0.18)", // amarelo suave
+    backgroundColor: "rgba(255,193,7,0.18)",
     paddingHorizontal: 10,
     paddingVertical: 8,
     borderRadius: 999,
   },
-  pointsText: { fontWeight: "900", color: BLUE },
+
+  pointsText: {
+    fontWeight: "900",
+    color: BLUE,
+  },
 });

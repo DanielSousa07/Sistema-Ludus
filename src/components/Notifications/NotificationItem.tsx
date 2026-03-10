@@ -26,7 +26,7 @@ function formatWhen(iso: string) {
 }
 
 function shouldShowExpand(body?: string) {
-  return (body || "").trim().length > 60; // bem realista pro teu caso
+  return (body || "").trim().length > 60; 
 }
 
 function metaForType(type: string) {
@@ -53,6 +53,7 @@ function metaForType(type: string) {
 const BLUE = "#31358B";
 const RED = "#B3193A";
 const YELLOW = "#FBBC04";
+const GREEN = "#34A853";
 
 function toneColor(tone: "blue" | "red" | "yellow") {
   if (tone === "red") return RED;
@@ -100,8 +101,8 @@ export function NotificationItem({
 
               {isUnread && (
                 <View style={styles.newWrap}>
-                  <View style={[styles.newDot, { backgroundColor: RED }]} />
-                  <Text style={[styles.newText, { color: RED }]}>Nova</Text>
+                  <View style={[styles.newDot, { backgroundColor: YELLOW }]} />
+                  <Text style={[styles.newText, { color: GREEN }]}>Nova</Text>
                 </View>
               )}
             </View>

@@ -450,7 +450,7 @@ export default function GameDetailsScreen() {
               <View style={styles.tabs}>
                 <Pressable
                   onPress={() => setTab("description")}
-                  style={[styles.tab, tab === "description" && styles.tabBlue]}
+                  style={[styles.tab, tab === "description" && styles.tabYellow]}
                 >
                   <Ionicons
                     name="document-text-outline"
@@ -467,7 +467,7 @@ export default function GameDetailsScreen() {
 
                 <Pressable
                   onPress={() => setTab("components")}
-                  style={[styles.tab, tab === "components" && styles.tabYellow]}
+                  style={[styles.tab, tab === "components" && styles.tabBlue]}
                 >
                   <Ionicons
                     name="cube-outline"

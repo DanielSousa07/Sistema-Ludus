@@ -132,11 +132,6 @@ export default function ProfileScreen() {
               onPress={() => router.push("/notifications")}
             />
 
-            <ProfileMenuItem
-              icon="lock-closed-outline"
-              title="Privacidade"
-              onPress={() => Alert.alert("Privacidade", "Tela de privacidade em breve.")}
-            />
 
             <ProfileMenuItem
               icon="information-circle-outline"

@@ -13,9 +13,9 @@ type MeRow = {
   rank: number;
 };
 
-const PRIMARY = "#31358B";     
-const YELLOW = "#FFC107";     
-const RED = "#E53935";         
+const PRIMARY = "#31358B";
+const YELLOW = "#FFC107";
+const RED = "#E53935";
 
 function compactLevel(levelName?: string, level?: number) {
   if (levelName) return levelName;
@@ -39,23 +39,33 @@ export function EngagementPreview() {
       try {
         const meRes = await api.get<MeRow>("/engagement/me");
         if (!mounted) return;
+
         setMe(meRes.data ?? null);
       } catch (e: any) {
-  const status = e?.response?.status;
-  const code = e?.response?.data?.code;
+        if (!mounted) return;
 
-  if (status === 403 && (code === "EMAIL_NOT_VERIFIED" || code === "PHONE_NOT_VERIFIED")) {
-    setMe(null);
-    setErr(false);
-    return;
-  }
+        const status = e?.response?.status;
+        const code = e?.response?.data?.code;
 
-  setErr(true);
-  setMe(null);
-}
+        if (
+          status === 403 &&
+          (code === "EMAIL_NOT_VERIFIED" || code === "PHONE_NOT_VERIFIED")
+        ) {
+          setMe(null);
+          setErr(false);
+        } else {
+          setErr(true);
+          setMe(null);
+        }
+      } finally {
+        if (mounted) {
+          setLoading(false);
+        }
+      }
     }
 
     load();
+
     return () => {
       mounted = false;
     };
@@ -101,7 +111,6 @@ export function EngagementPreview() {
       </View>
 
       <View style={styles.right}>
-        
         <View style={[styles.rankBadge, { backgroundColor: badge.bg }]}>
           <Text style={[styles.rankText, { color: badge.fg }]}>
             {me?.rank ? `#${me.rank}` : "#—"}
@@ -117,7 +126,6 @@ export function EngagementPreview() {
 }
 
 const styles = StyleSheet.create({
-  
   wrap: {
     marginHorizontal: 20,
     marginTop: 18,
@@ -165,6 +173,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
+
   rankText: { fontWeight: "900", fontSize: 12 },
 
   chev: {
