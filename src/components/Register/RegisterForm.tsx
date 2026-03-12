@@ -88,13 +88,17 @@ export default function RegisterForm() {
 
   useEffect(() => {
     const webClientId = process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID;
+    const iosClient = process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID;
     if(!webClientId) {
       console.warn("EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID não encontrado")
       return;
     }
 
+
+
     GoogleSignin.configure({
       webClientId: webClientId,
+      iosClientId: iosClient,
       offlineAccess: true,
       forceCodeForRefreshToken: true
     });

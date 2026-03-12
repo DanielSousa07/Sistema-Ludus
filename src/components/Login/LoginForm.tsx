@@ -26,15 +26,20 @@ export function LoginForm() {
 
   useEffect(() => {
     const webClientId = process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID;
+    const iosClientId = process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID;
 
     if (!webClientId) {
       console.warn("EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID não definido");
       return;
     }
-
+    if (!webClientId) {
+      console.warn("Probela com env")
+    }
+    console.log("CHAVE IOS CLIENT: ", iosClientId)
     GoogleSignin.configure({
       webClientId,
       offlineAccess: false,
+      iosClientId: iosClientId,
     });
   }, []);
 
