@@ -19,7 +19,7 @@ export default function ManageScreen() {
         <Text style={styles.title}>Painel Administrativo</Text>
         <Text style={styles.subtitle}>
           Gerencie o catálogo do Ludus
-         <Pressable onPress={logout}><Text>Sair</Text>r</Pressable>
+         <Pressable onPress={() => router.push("/terms")}><Text>Sair</Text></Pressable>
         </Text>
         
 

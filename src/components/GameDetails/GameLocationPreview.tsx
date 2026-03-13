@@ -47,6 +47,7 @@ export function GameLocationPreview({
             pointerEvents="none"
             initialRegion={region}
             mapType="standard"
+            
           >
             <Marker coordinate={{ latitude, longitude }} />
           </MapView>

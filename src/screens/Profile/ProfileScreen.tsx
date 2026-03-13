@@ -136,7 +136,7 @@ export default function ProfileScreen() {
             <ProfileMenuItem
               icon="information-circle-outline"
               title="Sobre nós"
-              onPress={() => Alert.alert("Sobre nós", "Tela de sobre nós em breve.")}
+              onPress={() => router.push("/profile/about")}
             />
           </View>
 
