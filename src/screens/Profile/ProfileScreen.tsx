@@ -5,7 +5,7 @@ import { useAuth } from "@/src/contexts/AuthContext";
 import { api } from "@/src/services/api";
 import * as ImagePicker from "expo-image-picker";
 import { useRouter } from "expo-router";
-import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { Alert, ScrollView, StyleSheet, Text, View } from "react-native";
 import HomeBackground from "../../components/Home/HomeBackground";
 
 export default function ProfileScreen() {
@@ -24,12 +24,12 @@ export default function ProfileScreen() {
       },
       ...(user?.avatar
         ? [
-            {
-              text: "Remover foto",
-              style: "destructive" as const,
-              onPress: removeProfilePhoto,
-            },
-          ]
+          {
+            text: "Remover foto",
+            style: "destructive" as const,
+            onPress: removeProfilePhoto,
+          },
+        ]
         : []),
     ]);
   }
@@ -100,10 +100,6 @@ export default function ProfileScreen() {
     }
   }
 
-  async function handleLogout() {
-    await logout();
-    router.replace("/login");
-  }
 
   return (
     <View style={styles.root}>
@@ -141,14 +137,12 @@ export default function ProfileScreen() {
           </View>
 
           <ProfileMenuItem
-          icon="cog-outline"
-          title="Configurações"
-          onPress={() => Alert.alert("Config", "Tela em breve")}
+            icon="settings-outline"
+            title="Configurações"
+            onPress={() => router.push("/profile/settings")}
           />
 
-          <Pressable onPress={handleLogout} style={styles.logoutBtn}>
-            <Text style={styles.logoutText}>Sair da conta</Text>
-          </Pressable>
+       
         </ScrollView>
       </View>
 
@@ -191,14 +185,6 @@ const styles = StyleSheet.create({
     backgroundColor: "#FBBC04",
   },
 
-  logoutBtn: {
-    marginTop: 24,
-    height: 56,
-    borderRadius: 18,
-    backgroundColor: "#E62325",
-    alignItems: "center",
-    justifyContent: "center",
-  },
 
   logoutText: {
     color: "#fff",

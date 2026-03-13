@@ -1,3 +1,4 @@
+import { Ionicons } from "@expo/vector-icons";
 import { StyleSheet, Text, TextInput, View } from "react-native";
 
 type Props = {
@@ -17,6 +18,7 @@ export function AccountPersonalForm({
     <>
       <View style={styles.section}>
         <Text style={styles.label}>Nome completo</Text>
+
         <View style={styles.inputWrap}>
           <TextInput
             value={name}
@@ -25,11 +27,14 @@ export function AccountPersonalForm({
             placeholderTextColor="#8B8EA1"
             style={styles.input}
           />
+
+          <Ionicons name="pencil-outline" size={18} color="#8B8EA1" />
         </View>
       </View>
 
       <View style={styles.section}>
         <Text style={styles.label}>Telefone</Text>
+
         <View style={styles.inputWrap}>
           <TextInput
             value={phone}
@@ -39,6 +44,8 @@ export function AccountPersonalForm({
             keyboardType="phone-pad"
             style={styles.input}
           />
+
+          <Ionicons name="pencil-outline" size={18} color="#8B8EA1" />
         </View>
       </View>
     </>
@@ -63,12 +70,17 @@ const styles = StyleSheet.create({
     borderRadius: 18,
     backgroundColor: "#F3F5FF",
     paddingHorizontal: 16,
-    justifyContent: "center",
+
     borderWidth: 1,
     borderColor: "rgba(49,53,139,0.08)",
+
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
   },
 
   input: {
+    flex: 1,
     fontSize: 15,
     color: "#222222",
     fontWeight: "700",
