@@ -34,7 +34,14 @@ type AuthContextValue = {
   user: AuthUser | null;
   isLoading: boolean;
   login: (emailOrPhone: string, senha: string) => Promise<AuthResult>;
-  register: (name: string, email: string, phone: string, senha: string) => Promise<AuthResult>;
+  register: (
+    name: string,
+    email: string,
+    phone: string,
+    senha: string,
+    acceptedTerms: boolean,
+    acceptedPrivacy: boolean
+  ) => Promise<AuthResult>;
   logout: () => Promise<void>;
   signInWithToken: (token: string, userData: AuthUser) => Promise<void>;
   loginGoogle: (idToken: string) => Promise<GoogleAuthResult>;
@@ -105,9 +112,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   async function updateUser(patch: Partial<AuthUser>) {
     setUser((prev) => {
-      if(!prev) return prev;
-      const next = {...prev, ...patch} 
-      SecureStore.setItemAsync("user", JSON.stringify(next)).catch(() => {});
+      if (!prev) return prev;
+      const next = { ...prev, ...patch }
+      SecureStore.setItemAsync("user", JSON.stringify(next)).catch(() => { });
       return next;
     });
 
@@ -143,10 +150,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     name: string,
     email: string,
     phone: string,
-    senha: string
+    senha: string,
+    acceptedTerms: boolean,
+    acceptedPrivacy: boolean
   ): Promise<AuthResult> {
     try {
-      await api.post("/auth/register", { name, email, phone, senha });
+      await api.post("/auth/register", {
+        name,
+        email,
+        phone,
+        senha,
+        acceptedTerms,
+        acceptedPrivacy,
+      });
 
       const loginResult = await login(email, senha);
 

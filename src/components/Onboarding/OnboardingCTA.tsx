@@ -1,30 +1,37 @@
 import {
   StyleSheet,
   Text,
-
   TouchableOpacity,
-
   View
 } from "react-native";
 
 import { useRouter } from "expo-router";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+
 export function OnboardingCTA() {
   const router = useRouter();
-  return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Encontre seus{"\n"}jogos ideais!</Text>
+  const insets = useSafeAreaInsets();
 
-      <TouchableOpacity style={styles.button} onPress={() => router.push("/register")}>
+  return (
+    <View style={[styles.container, { paddingBottom: 28 + insets.bottom }]}>
+      <Text style={styles.title}>
+        Encontre seus{"\n"}jogos ideais!
+      </Text>
+
+      <TouchableOpacity
+        style={styles.button}
+        onPress={() => router.push("/register")}
+      >
         <Text style={styles.buttonText}>Registrar</Text>
       </TouchableOpacity>
 
-        <Text style={styles.login}>
-          Já possui uma conta?{" "}
-  
-            <Text style={styles.link} onPress={() => router.push("/login")}>Logue aqui!</Text>
-          
+      <Text style={styles.login}>
+        Já possui uma conta?{" "}
+        <Text style={styles.link} onPress={() => router.push("/login")}>
+          Logue aqui!
         </Text>
-            </View>
+      </Text>
+    </View>
   );
 }
 

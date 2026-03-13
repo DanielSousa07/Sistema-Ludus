@@ -10,7 +10,6 @@ import { GameDescription } from "@/src/components/GameDetails/GameDescription";
 import { GameFactsRow } from "@/src/components/GameDetails/GameFactsRow";
 import { GameHero } from "@/src/components/GameDetails/GameHero";
 import { GameHowToPlay } from "@/src/components/GameDetails/GameHowToPlay";
-import { GameLocationPreview } from "@/src/components/GameDetails/GameLocationPreview";
 import { GameMeta } from "@/src/components/GameDetails/GameMeta";
 import { RateModal } from "@/src/components/GameDetails/RateModal";
 import { RentModal } from "@/src/components/GameDetails/RentModal";
@@ -166,11 +165,11 @@ export default function GameDetailsScreen() {
       setGame((prev) =>
         prev
           ? {
-              ...prev,
-              rating: res.data?.avgRating ?? prev.rating,
-              ratingsCount: res.data?.ratingsCount ?? prev.ratingsCount,
-              myRating: res.data?.myRating ?? value,
-            }
+            ...prev,
+            rating: res.data?.avgRating ?? prev.rating,
+            ratingsCount: res.data?.ratingsCount ?? prev.ratingsCount,
+            myRating: res.data?.myRating ?? value,
+          }
           : prev
       );
 
@@ -436,17 +435,20 @@ export default function GameDetailsScreen() {
                   }
                   setRateOpen(true);
                 }}
+                available={!!game.available}
+                rentalDaysText="Até 3 dias"
+                availabilityForecast={null}
               />
 
               <GameFactsRow players={playersText} time={timeText} age={ageText} />
 
-              <GameLocationPreview
+              { /*GameLocationPreview
                 placeName="Biblioteca, Campus Timon"
                 address="IFMA - Campus Timon"
                 latitude={-5.11152}
                 longitude={-42.85378}
               />
-
+*/}
               <View style={styles.tabs}>
                 <Pressable
                   onPress={() => setTab("description")}

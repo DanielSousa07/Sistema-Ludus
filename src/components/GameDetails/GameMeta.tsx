@@ -1,4 +1,5 @@
 import { Ionicons } from "@expo/vector-icons";
+import { useState } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 
 type Props = {
@@ -6,14 +7,31 @@ type Props = {
   avgRating: number;
   ratingsCount?: number | null;
   onPressRate: () => void;
+
+  available?: boolean;
+  rentalDaysText?: string;
+  availabilityForecast?: string | null;
 };
 
-export function GameMeta({ title, avgRating, ratingsCount, onPressRate }: Props) {
+export function GameMeta({
+  title,
+  avgRating,
+  ratingsCount,
+  onPressRate,
+  available = false,
+  rentalDaysText = "Até 3 dias",
+  availabilityForecast,
+}: Props) {
+  const [expanded, setExpanded] = useState(false);
+
   const safeAvg = Number.isFinite(avgRating) ? avgRating : 0;
   const rounded = Math.round(safeAvg);
   const display = safeAvg.toFixed(1);
-
   const count = typeof ratingsCount === "number" ? ratingsCount : 0;
+
+  const statusText = available ? "Disponível agora" : "Indisponível no momento";
+  const statusColor = available ? "#2E7D32" : "#E62325";
+  const statusBg = available ? "#EAF7EE" : "#FFE9EA";
 
   return (
     <View style={styles.wrap}>
@@ -39,6 +57,47 @@ export function GameMeta({ title, avgRating, ratingsCount, onPressRate }: Props)
       </View>
 
       <Text style={styles.title}>{title}</Text>
+
+      <Pressable
+        onPress={() => setExpanded((v) => !v)}
+        style={styles.statusRow}
+      >
+        <View style={[styles.statusPill, { backgroundColor: statusBg }]}>
+          <View
+            style={[
+              styles.statusDot,
+              { backgroundColor: statusColor },
+            ]}
+          />
+          <Text style={[styles.statusText, { color: statusColor }]}>
+            {statusText}
+          </Text>
+        </View>
+
+        <Ionicons
+          name={expanded ? "chevron-up" : "chevron-down"}
+          size={16}
+          color="#8B8EA1"
+        />
+      </Pressable>
+
+      {expanded && (
+        <View style={styles.infoBox}>
+          {available ? (
+            <>
+              <Text style={styles.infoLabel}>Prazo de aluguel</Text>
+              <Text style={styles.infoValue}>{rentalDaysText}</Text>
+            </>
+          ) : (
+            <>
+              <Text style={styles.infoLabel}>Previsão de disponibilidade</Text>
+              <Text style={styles.infoValue}>
+                {availabilityForecast?.trim() || "Sem previsão no momento"}
+              </Text>
+            </>
+          )}
+        </View>
+      )}
     </View>
   );
 }
@@ -95,5 +154,54 @@ const styles = StyleSheet.create({
     lineHeight: 30,
     fontWeight: "900",
     color: "#444",
+  },
+
+  statusRow: {
+    marginTop: 10,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+  },
+
+  statusPill: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    paddingHorizontal: 10,
+    paddingVertical: 7,
+    borderRadius: 999,
+  },
+
+  statusDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 999,
+  },
+
+  statusText: {
+    fontSize: 12,
+    fontWeight: "900",
+  },
+
+  infoBox: {
+    marginTop: 10,
+    backgroundColor: "#F7F8FF",
+    borderRadius: 14,
+    padding: 12,
+    borderWidth: 1,
+    borderColor: "rgba(49,53,139,0.08)",
+  },
+
+  infoLabel: {
+    fontSize: 12,
+    fontWeight: "800",
+    color: "#8B8EA1",
+  },
+
+  infoValue: {
+    marginTop: 4,
+    fontSize: 14,
+    fontWeight: "900",
+    color: "#31358B",
   },
 });

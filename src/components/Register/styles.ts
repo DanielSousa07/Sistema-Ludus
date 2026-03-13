@@ -60,14 +60,83 @@ export const styles = StyleSheet.create({
   inputPassword: {
     flex: 1,
     paddingVertical: 16,
-    color: "#333"
+    color: "#333",
   },
-
 
   fieldError: {
     borderColor: "#E62325",
   },
 
+  passwordStrengthWrap: {
+    marginTop: 2,
+    marginBottom: 10,
+  },
+
+  strengthBars: {
+    flexDirection: "row",
+    gap: 8,
+  },
+
+  strengthBar: {
+    flex: 1,
+    height: 6,
+    borderRadius: 999,
+    backgroundColor: "#E4E7EE",
+  },
+
+  strengthText: {
+    marginTop: 8,
+    fontSize: 12,
+    fontWeight: "700",
+  },
+
+  rulesWrap: {
+    marginTop: 2,
+    marginBottom: 14,
+    gap: 6,
+  },
+
+  ruleRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
+
+  ruleText: {
+    fontSize: 12,
+    color: "#8B8EA1",
+    fontWeight: "600",
+  },
+
+  ruleTextOk: {
+    color: "#2E7D32",
+  },
+
+  checksWrap: {
+    marginTop: 6,
+    marginBottom: 20,
+    gap: 12,
+  },
+
+  checkRow: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    gap: 10,
+  },
+
+  checkText: {
+    flex: 1,
+    fontSize: 13,
+    lineHeight: 20,
+    color: "#535353",
+    fontWeight: "600",
+  },
+
+  checkLink: {
+    color: "#31358B",
+    fontWeight: "800",
+    textDecorationLine: "underline",
+  },
 
   errorText: {
     marginBottom: 14,
