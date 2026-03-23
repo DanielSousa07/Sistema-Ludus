@@ -1,4 +1,5 @@
 import { StyleSheet } from "react-native";
+
 export const styles = StyleSheet.create({
   overlay: {
     flex: 1,
@@ -64,31 +65,29 @@ export const styles = StyleSheet.create({
     paddingVertical: 8,
     borderRadius: 10,
   },
+  addButtonDisabled: {
+    backgroundColor: "#A5A7D6",
+  },
   addButtonText: {
     color: "#FFF",
     fontWeight: "600",
   },
   emptyContainer: {
-  flex: 1,
-  justifyContent: "center",
-  alignItems: "center",
-  paddingTop: 40,
-},
-
-emptyTitle: {
-  marginTop: 12,
-  fontSize: 16,
-  fontWeight: "600",
-  color: "#31358B",
-},
-
-emptySubtitle: {
-  marginTop: 6,
-  fontSize: 14,
-  color: "#777",
-  textAlign: "center",
-},
-
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    paddingTop: 40,
+  },
+  emptyTitle: {
+    marginTop: 12,
+    fontSize: 16,
+    fontWeight: "600",
+    color: "#31358B",
+  },
+  emptySubtitle: {
+    marginTop: 6,
+    fontSize: 14,
+    color: "#777",
+    textAlign: "center",
+  },
 });
-
-

@@ -8,6 +8,7 @@ import { useRouter } from "expo-router";
 import { useEffect, useMemo, useState } from "react";
 import {
   ActivityIndicator,
+  Alert,
   FlatList,
   Pressable,
   StyleSheet,
@@ -91,7 +92,9 @@ export default function EditGamesScreen() {
 
       setSelected(null);
     } catch (err) {
+      const error = err as any;
       console.log("Erro ao deletar jogo:", err);
+      Alert.alert("Erro", error.message || "Não foi possível deletar o jogo. Tente novamente mais tarde.");
     }
   }
 
