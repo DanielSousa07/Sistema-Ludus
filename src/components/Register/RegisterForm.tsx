@@ -9,15 +9,13 @@ import { GoogleSignin } from "@react-native-google-signin/google-signin";
 import { useRouter } from "expo-router";
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
-  Keyboard,
   KeyboardAvoidingView,
   Platform,
   Pressable,
   ScrollView,
   Text,
   TextInput,
-  TouchableWithoutFeedback,
-  View,
+  View
 } from "react-native";
 import LudusAlert from "../common/LudusAlert/LudusAlert";
 import { styles } from "./styles";
@@ -220,19 +218,19 @@ export default function RegisterForm() {
     setLoading(true);
     try {
       const result = await register(
-  cleanName,
-  cleanEmail,
-  cleanPhoneDigits,
-  password,
-  acceptedTerms,
-  acceptedPrivacy
-);
+        cleanName,
+        cleanEmail,
+        cleanPhoneDigits,
+        password,
+        acceptedTerms,
+        acceptedPrivacy
+      );
 
       if (result?.success) {
         showAlert(
           "success",
-          "Conta criada 🎉",
-          "Agora verifique seu número com o código enviado por SMS."
+          "Cadastro iniciado 🎉",
+          "Enviamos um código de verificação. Confirme para concluir a criação da sua conta."
         );
 
         setTimeout(() => {
@@ -243,7 +241,7 @@ export default function RegisterForm() {
           });
         }, 1200);
       } else {
-        showAlert("error", "Erro", result?.message || "Erro ao criar conta.");
+        showAlert("error", "Erro", result?.message || "Erro ao iniciar cadastro.");
       }
     } catch {
       showAlert("error", "Erro", "Falha inesperada ao criar conta.");
@@ -259,177 +257,176 @@ export default function RegisterForm() {
       : {};
 
   return (
-    <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
-      <View style={styles.container}>
-        <Wrapper style={{ flex: 1 }} {...wrapperProps}>
-          <ScrollView
-            style={{ flex: 1 }}
-            showsVerticalScrollIndicator={false}
-            contentContainerStyle={styles.scroll}
-            keyboardShouldPersistTaps="handled"
-          >
-            <RegisterHeader />
+  <View style={styles.container}>
+    <Wrapper style={{ flex: 1 }} {...wrapperProps}>
+      <ScrollView
+        style={{ flex: 1 }}
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={styles.scroll}
+        keyboardShouldPersistTaps="handled"
+        keyboardDismissMode="on-drag"
+      >
+        <RegisterHeader />
 
-            <Text style={styles.label}>Nome completo</Text>
-            <TextInput
-              ref={nameRef}
-              style={styles.input}
-              placeholder="Seu nome"
-              placeholderTextColor="#999"
-              value={name}
-              onChangeText={setName}
-              returnKeyType="next"
-              onSubmitEditing={() => emailRef.current?.focus()}
-            />
-
-            <Text style={styles.label}>E-mail</Text>
-            <TextInput
-              ref={emailRef}
-              style={styles.input}
-              placeholder="Seu e-mail"
-              placeholderTextColor="#999"
-              value={email}
-              onChangeText={setEmail}
-              autoCapitalize="none"
-              keyboardType="email-address"
-              autoCorrect={false}
-              returnKeyType="next"
-              onSubmitEditing={() => phoneRef.current?.focus()}
-              textContentType="emailAddress"
-            />
-
-            <Text style={styles.label}>Telefone</Text>
-            <TextInput
-              ref={phoneRef}
-              style={styles.input}
-              placeholder="(00) 00000-0000"
-              placeholderTextColor="#999"
-              value={phone}
-              onChangeText={(t) => setPhone(formatBRPhone(t))}
-              keyboardType="phone-pad"
-              returnKeyType="next"
-              onSubmitEditing={() => passRef.current?.focus()}
-              textContentType="telephoneNumber"
-            />
-
-            <Text style={styles.label}>Senha</Text>
-            <View
-              style={[
-                styles.passwordWrapper,
-                passwordError ? styles.fieldError : null,
-              ]}
-            >
-              <TextInput
-                ref={passRef}
-                style={styles.inputPassword}
-                placeholder="Senha"
-                placeholderTextColor="#999"
-                secureTextEntry={hidePassword}
-                value={password}
-                onChangeText={setPassword}
-                onBlur={() => setTouched((t) => ({ ...t, password: true }))}
-                returnKeyType="next"
-                onSubmitEditing={() => confirmRef.current?.focus()}
-                textContentType="newPassword"
-                autoCapitalize="none"
-                autoCorrect={false}
-              />
-              <Pressable onPress={() => setHidePassword((v) => !v)}>
-                <Ionicons
-                  name={hidePassword ? "eye-off" : "eye"}
-                  size={22}
-                  color={passwordError ? "#E62325" : "#535353"}
-                />
-              </Pressable>
-            </View>
-
-            <PasswordStrengthSection
-              visible={password.length > 0}
-              strength={passwordStrength}
-              rules={passwordRules}
-            />
-
-            {passwordError ? <Text style={styles.errorText}>{passwordError}</Text> : null}
-
-            <Text style={styles.label}>Confirmar senha</Text>
-            <View
-              style={[
-                styles.passwordWrapper,
-                confirmError ? styles.fieldError : null,
-              ]}
-            >
-              <TextInput
-                ref={confirmRef}
-                style={styles.inputPassword}
-                placeholder="Confirme a senha"
-                placeholderTextColor="#999"
-                secureTextEntry={hideConfirm}
-                value={confirm}
-                onChangeText={setConfirm}
-                onBlur={() => setTouched((t) => ({ ...t, confirm: true }))}
-                returnKeyType="done"
-                onSubmitEditing={handleRegister}
-                textContentType="newPassword"
-                autoCapitalize="none"
-                autoCorrect={false}
-              />
-              <Pressable onPress={() => setHideConfirm((v) => !v)}>
-                <Ionicons
-                  name={hideConfirm ? "eye-off" : "eye"}
-                  size={22}
-                  color={confirmError ? "#E62325" : "#535353"}
-                />
-              </Pressable>
-            </View>
-
-            {confirmError ? <Text style={styles.errorText}>{confirmError}</Text> : null}
-
-            <TermsConsentSection
-              acceptedTerms={acceptedTerms}
-              acceptedPrivacy={acceptedPrivacy}
-              onToggleTerms={() => setAcceptedTerms((v) => !v)}
-              onTogglePrivacy={() => setAcceptedPrivacy((v) => !v)}
-            />
-
-            <Pressable
-              style={[styles.button, loading && { opacity: 0.7 }]}
-              onPress={handleRegister}
-              disabled={loading}
-            >
-              <Text style={styles.buttonText}>
-                {loading ? "Processando..." : "Criar conta"}
-              </Text>
-            </Pressable>
-
-            <View style={styles.divider}>
-              <View style={styles.line} />
-              <Text style={styles.or}>or</Text>
-              <View style={styles.line} />
-            </View>
-
-            <GoogleRegisterButton
-              loading={googleLoading}
-              disabled={googleLoading || loading}
-              onPress={handleGoogle}
-            />
-
-            <Text style={styles.register}>
-              Já possui uma conta?{" "}
-              <Text style={styles.link} onPress={() => router.replace("/login")}>
-                Entrar
-              </Text>
-            </Text>
-          </ScrollView>
-        </Wrapper>
-
-        <LudusAlert
-          visible={alertVisible}
-          type={alertType}
-          title={alertTitle}
-          message={alertMessage}
-          onClose={() => setAlertVisible(false)}
+        <Text style={styles.label}>Nome completo</Text>
+        <TextInput
+          ref={nameRef}
+          style={styles.input}
+          placeholder="Seu nome"
+          placeholderTextColor="#999"
+          value={name}
+          onChangeText={setName}
+          returnKeyType="next"
+          onSubmitEditing={() => emailRef.current?.focus()}
         />
-      </View>
-      </TouchableWithoutFeedback>
-      );
+
+        <Text style={styles.label}>E-mail</Text>
+        <TextInput
+          ref={emailRef}
+          style={styles.input}
+          placeholder="Seu e-mail"
+          placeholderTextColor="#999"
+          value={email}
+          onChangeText={setEmail}
+          autoCapitalize="none"
+          keyboardType="email-address"
+          autoCorrect={false}
+          returnKeyType="next"
+          onSubmitEditing={() => phoneRef.current?.focus()}
+          textContentType="emailAddress"
+        />
+
+        <Text style={styles.label}>Telefone</Text>
+        <TextInput
+          ref={phoneRef}
+          style={styles.input}
+          placeholder="(00) 00000-0000"
+          placeholderTextColor="#999"
+          value={phone}
+          onChangeText={(t) => setPhone(formatBRPhone(t))}
+          keyboardType="phone-pad"
+          returnKeyType="next"
+          onSubmitEditing={() => passRef.current?.focus()}
+          textContentType="telephoneNumber"
+        />
+
+        <Text style={styles.label}>Senha</Text>
+        <View
+          style={[
+            styles.passwordWrapper,
+            passwordError ? styles.fieldError : null,
+          ]}
+        >
+          <TextInput
+            ref={passRef}
+            style={styles.inputPassword}
+            placeholder="Senha"
+            placeholderTextColor="#999"
+            secureTextEntry={hidePassword}
+            value={password}
+            onChangeText={setPassword}
+            onBlur={() => setTouched((t) => ({ ...t, password: true }))}
+            returnKeyType="next"
+            onSubmitEditing={() => confirmRef.current?.focus()}
+            textContentType="newPassword"
+            autoCapitalize="none"
+            autoCorrect={false}
+          />
+          <Pressable onPress={() => setHidePassword((v) => !v)}>
+            <Ionicons
+              name={hidePassword ? "eye-off" : "eye"}
+              size={22}
+              color={passwordError ? "#E62325" : "#535353"}
+            />
+          </Pressable>
+        </View>
+
+        <PasswordStrengthSection
+          visible={password.length > 0}
+          strength={passwordStrength}
+          rules={passwordRules}
+        />
+
+        {passwordError ? <Text style={styles.errorText}>{passwordError}</Text> : null}
+
+        <Text style={styles.label}>Confirmar senha</Text>
+        <View
+          style={[
+            styles.passwordWrapper,
+            confirmError ? styles.fieldError : null,
+          ]}
+        >
+          <TextInput
+            ref={confirmRef}
+            style={styles.inputPassword}
+            placeholder="Confirme a senha"
+            placeholderTextColor="#999"
+            secureTextEntry={hideConfirm}
+            value={confirm}
+            onChangeText={setConfirm}
+            onBlur={() => setTouched((t) => ({ ...t, confirm: true }))}
+            returnKeyType="done"
+            onSubmitEditing={handleRegister}
+            textContentType="newPassword"
+            autoCapitalize="none"
+            autoCorrect={false}
+          />
+          <Pressable onPress={() => setHideConfirm((v) => !v)}>
+            <Ionicons
+              name={hideConfirm ? "eye-off" : "eye"}
+              size={22}
+              color={confirmError ? "#E62325" : "#535353"}
+            />
+          </Pressable>
+        </View>
+
+        {confirmError ? <Text style={styles.errorText}>{confirmError}</Text> : null}
+
+        <TermsConsentSection
+          acceptedTerms={acceptedTerms}
+          acceptedPrivacy={acceptedPrivacy}
+          onToggleTerms={() => setAcceptedTerms((v) => !v)}
+          onTogglePrivacy={() => setAcceptedPrivacy((v) => !v)}
+        />
+
+        <Pressable
+          style={[styles.button, loading && { opacity: 0.7 }]}
+          onPress={handleRegister}
+          disabled={loading}
+        >
+          <Text style={styles.buttonText}>
+            {loading ? "Processando..." : "Criar conta"}
+          </Text>
+        </Pressable>
+
+        <View style={styles.divider}>
+          <View style={styles.line} />
+          <Text style={styles.or}>or</Text>
+          <View style={styles.line} />
+        </View>
+
+        <GoogleRegisterButton
+          loading={googleLoading}
+          disabled={googleLoading || loading}
+          onPress={handleGoogle}
+        />
+
+        <Text style={styles.register}>
+          Já possui uma conta?{" "}
+          <Text style={styles.link} onPress={() => router.replace("/login")}>
+            Entrar
+          </Text>
+        </Text>
+      </ScrollView>
+    </Wrapper>
+
+    <LudusAlert
+      visible={alertVisible}
+      type={alertType}
+      title={alertTitle}
+      message={alertMessage}
+      onClose={() => setAlertVisible(false)}
+    />
+  </View>
+);
 }

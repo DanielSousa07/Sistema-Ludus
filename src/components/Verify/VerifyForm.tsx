@@ -1,3 +1,5 @@
+import { useAuth } from "@/src/contexts/AuthContext";
+import { api } from "@/src/services/api";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import * as SecureStore from "expo-secure-store";
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -12,8 +14,6 @@ import {
   TextInput,
   View,
 } from "react-native";
-
-import { api } from "@/src/services/api";
 import LudusAlert from "../common/LudusAlert/LudusAlert";
 import { styles } from "./styles";
 import VerifyBackground from "./VerifyBackground";
@@ -72,6 +72,7 @@ export default function VerifyForm() {
   const [countdown, setCountdown] = useState(30);
   const [isCounting, setIsCounting] = useState(true);
   const [resendLoading, setResendLoading] = useState(false);
+  const { signInWithToken } = useAuth();
 
   useEffect(() => {
     if (email) {
@@ -312,10 +313,34 @@ export default function VerifyForm() {
     setLoading(true);
     try {
       if (method === "email") {
-        await api.post("/auth/verify-email", { email, code: fullCode });
+        const response = await api.post("/auth/verify-email", {
+          email,
+          code: fullCode,
+        });
+
+        const { token, user } = response.data;
+
+        if (token && user) {
+          await signInWithToken(token, user);
+          router.replace("/home");
+          return;
+        }
         await goInsideApp("email");
+
       } else {
-        await api.post("/auth/verify-phone", { phone, code: fullCode });
+        const response = await api.post("/auth/verify-phone", {
+          phone,
+          code: fullCode,
+        });
+
+        const { token, user } = response.data;
+
+        if (token && user) {
+          await signInWithToken(token, user);
+          router.replace("/home");
+          return;
+        }
+
         await goInsideApp("sms");
       }
     } catch (error: any) {
@@ -443,10 +468,10 @@ export default function VerifyForm() {
                   {isCounting
                     ? `Reenviar em 00:${countdown.toString().padStart(2, "0")}`
                     : resendLoading
-                    ? "Enviando..."
-                    : method === "email"
-                    ? "REENVIAR E-MAIL"
-                    : "ENVIAR/REENVIAR SMS"}
+                      ? "Enviando..."
+                      : method === "email"
+                        ? "REENVIAR E-MAIL"
+                        : "ENVIAR/REENVIAR SMS"}
                 </Text>
               </Pressable>
 

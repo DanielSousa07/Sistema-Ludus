@@ -4,6 +4,7 @@ import { ActivityIndicator, StyleSheet, View } from "react-native";
 
 import { NavFooter } from "@/src/components/common/NavFooter";
 import HomeBackground from "@/src/components/Home/HomeBackground";
+import RentalDetailsModal from "@/src/components/Rentals/RentalDetailsModal";
 import type { RentalItemModel } from "@/src/components/Rentals/RentalItem";
 import RentalsCard from "@/src/components/Rentals/RentalsCard";
 
@@ -11,6 +12,9 @@ export default function RentalsScreen() {
   const [rentals, setRentals] = useState<RentalItemModel[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+
+  const [selectedRental, setSelectedRental] = useState<RentalItemModel | null>(null);
+  const [cancelLoading, setCancelLoading] = useState(false);
 
   const load = useCallback(async () => {
     try {
@@ -35,6 +39,20 @@ export default function RentalsScreen() {
     setRefreshing(false);
   }, [load]);
 
+  async function handleCancelRental(rentalId: string) {
+    try {
+      setCancelLoading(true);
+
+    
+      await api.patch(`/rentals/${rentalId}/cancel`);
+
+      setSelectedRental(null);
+      await load();
+    } finally {
+      setCancelLoading(false);
+    }
+  }
+
   return (
     <View style={styles.root}>
       <HomeBackground />
@@ -45,15 +63,24 @@ export default function RentalsScreen() {
         </View>
       ) : (
         <View style={styles.container}>
-          {/* card por cima */}
           <View style={styles.cardWrap}>
-            <RentalsCard rentals={rentals} />
+            <RentalsCard
+              rentals={rentals}
+              onPressRental={setSelectedRental}
+            />
           </View>
-
 
           {refreshing && null}
         </View>
       )}
+
+      <RentalDetailsModal
+        visible={!!selectedRental}
+        rental={selectedRental}
+        onClose={() => setSelectedRental(null)}
+        onCancelRental={handleCancelRental}
+        cancelLoading={cancelLoading}
+      />
 
       <NavFooter />
     </View>

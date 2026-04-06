@@ -6,9 +6,10 @@ type Props = {
   rentals: RentalItemModel[];
   onRefresh?: () => void;
   loading?: boolean;
+  onPressRental?: (rental: RentalItemModel) => void;
 };
 
-export default function RentalsCard({ rentals }: Props) {
+export default function RentalsCard({ rentals, onPressRental }: Props) {
   const [tab, setTab] = useState<"ACTIVE" | "HISTORY">("ACTIVE");
 
   const { active, history } = useMemo(() => {
@@ -71,7 +72,12 @@ export default function RentalsCard({ rentals }: Props) {
           keyExtractor={(item) => item.id}
           showsVerticalScrollIndicator={false}
           contentContainerStyle={{ paddingBottom: 120 }}
-          renderItem={({ item }) => <RentalItem rental={item} />}
+          renderItem={({ item }) => (
+            <RentalItem
+              rental={item}
+              onPress={() => onPressRental?.(item)}
+            />
+          )}
         />
       )}
     </View>

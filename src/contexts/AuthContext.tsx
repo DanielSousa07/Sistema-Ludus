@@ -146,46 +146,37 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }
 
-  async function register(
-    name: string,
-    email: string,
-    phone: string,
-    senha: string,
-    acceptedTerms: boolean,
-    acceptedPrivacy: boolean
-  ): Promise<AuthResult> {
-    try {
-      await api.post("/auth/register", {
-        name,
-        email,
-        phone,
-        senha,
-        acceptedTerms,
-        acceptedPrivacy,
-      });
+ async function register(
+  name: string,
+  email: string,
+  phone: string,
+  senha: string,
+  acceptedTerms: boolean,
+  acceptedPrivacy: boolean
+): Promise<AuthResult> {
+  try {
+    await api.post("/auth/register", {
+      name,
+      email,
+      phone,
+      senha,
+      acceptedTerms,
+      acceptedPrivacy,
+    });
 
-      const loginResult = await login(email, senha);
+    return { success: true };
+  } catch (error: any) {
+    const errorMessage =
+      error?.response?.data?.error || "Erro ao conectar com o servidor";
 
-      if (loginResult.success) {
-        return { success: true };
-      }
+    console.error("Erro no registro:", errorMessage);
 
-      return {
-        success: false,
-        message: "Conta criada, mas não foi possível fazer login automaticamente.",
-      };
-    } catch (error: any) {
-      const errorMessage =
-        error?.response?.data?.error || "Erro ao conectar com o servidor";
-
-      console.error("Erro no registro:", errorMessage);
-
-      return {
-        success: false,
-        message: errorMessage,
-      };
-    }
+    return {
+      success: false,
+      message: errorMessage,
+    };
   }
+}
 
   async function loginGoogle(idToken: string): Promise<GoogleAuthResult> {
     try {

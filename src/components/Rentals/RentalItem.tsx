@@ -1,5 +1,4 @@
 import { Ionicons } from "@expo/vector-icons";
-import { useRouter } from "expo-router";
 import { Image, Pressable, StyleSheet, Text, View } from "react-native";
 
 export type RentalItemModel = {
@@ -19,14 +18,20 @@ function fmtDate(iso: string) {
 
 function statusLabel(status: string) {
   const s = (status || "").toUpperCase();
-  if (s === "PENDING" || s === "ACTIVE") return { text: "Em andamento", color: "#2FA84F" };
+  if (s === "PENDING") return { text: "Pendente", color: "#FBBC04" };
+  if (s === "ACTIVE") return { text: "Em andamento", color: "#2FA84F" };
   if (s === "RETURNED") return { text: "Devolvido", color: "#31358B" };
   if (s === "CANCELED") return { text: "Cancelado", color: "#B3193A" };
   return { text: status || "—", color: "#6A6A6A" };
 }
 
-export default function RentalItem({ rental }: { rental: RentalItemModel }) {
-  const router = useRouter();
+export default function RentalItem({
+  rental,
+  onPress,
+}: {
+  rental: RentalItemModel;
+  onPress?: () => void;
+}) {
   const st = statusLabel(rental.status);
 
   const copyLabel =
@@ -36,7 +41,7 @@ export default function RentalItem({ rental }: { rental: RentalItemModel }) {
 
   return (
     <Pressable
-      onPress={() => router.push({ pathname: "/game/[id]", params: { id: rental.game.id } })}
+      onPress={onPress}
       style={({ pressed }) => [styles.card, pressed && { opacity: 0.92 }]}
     >
       {rental.game.cover ? (
@@ -84,11 +89,11 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   image: {
-  width: 84,
-  aspectRatio: 1, 
-  borderRadius: 16,
-  backgroundColor: "#EEE",
-},
+    width: 84,
+    aspectRatio: 1,
+    borderRadius: 16,
+    backgroundColor: "#EEE",
+  },
   info: { flex: 1, marginLeft: 12 },
   topRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 10 },
   title: { flex: 1, fontSize: 16, fontWeight: "900", color: "#2C2C2C" },
