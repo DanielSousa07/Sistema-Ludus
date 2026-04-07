@@ -119,6 +119,7 @@ export function ManageSearchModal({ visible, onClose }: Props) {
               onChangeText={setSearch}
               onSubmitEditing={handleSearch}
               editable={!isAdding}
+              placeholderTextColor="#333"
             />
           </View>
 
