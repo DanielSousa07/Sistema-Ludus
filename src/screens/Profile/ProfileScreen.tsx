@@ -1,40 +1,76 @@
 import { NavFooter } from "@/src/components/common/NavFooter";
+import { AvatarPickerModal } from "@/src/components/Profie/AvatarPickerModal";
 import { ProfileHeader } from "@/src/components/Profie/ProfileHeader";
 import { ProfileMenuItem } from "@/src/components/Profie/ProfileMenuItem";
 import { useAuth } from "@/src/contexts/AuthContext";
 import { api } from "@/src/services/api";
 import * as ImagePicker from "expo-image-picker";
 import { useRouter } from "expo-router";
-import { Alert, ScrollView, StyleSheet, Text, View } from "react-native";
+import { useState } from "react";
+import {
+  ActivityIndicator,
+  Alert,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
+} from "react-native";
 import HomeBackground from "../../components/Home/HomeBackground";
 
 export default function ProfileScreen() {
   const router = useRouter();
-  const { user, logout, updateUser } = useAuth();
+  const { user, updateUser } = useAuth();
 
-  async function handleChangePhoto() {
-    Alert.alert("Foto de perfil", "Escolha uma opção", [
-      {
-        text: "Cancelar",
-        style: "cancel",
-      },
-      {
-        text: "Escolher da galeria",
-        onPress: pickImageFromLibrary,
-      },
-      ...(user?.avatar
-        ? [
-          {
-            text: "Remover foto",
-            style: "destructive" as const,
-            onPress: removeProfilePhoto,
-          },
-        ]
-        : []),
-    ]);
+  const [avatarModalVisible, setAvatarModalVisible] = useState(false);
+  const [uploadingAvatar, setUploadingAvatar] = useState(false);
+
+  function handleChangePhoto() {
+    setAvatarModalVisible(true);
   }
 
-  async function pickImageFromLibrary() {
+  async function uploadAvatar(asset: ImagePicker.ImagePickerAsset) {
+    try {
+      setUploadingAvatar(true);
+
+      const formData = new FormData();
+
+      formData.append("avatar", {
+        uri: asset.uri,
+        name: asset.fileName || `avatar-${Date.now()}.jpg`,
+        type: asset.mimeType || "image/jpeg",
+      } as any);
+
+      const response = await api.post("/users/me/avatar", formData, {
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
+      });
+
+      const nextUser = response.data?.user;
+
+      if (nextUser) {
+        await updateUser({
+          avatar: nextUser.avatar ?? null,
+          picture: nextUser.picture ?? user?.picture ?? null,
+          name: nextUser.name ?? user?.name,
+          nome: nextUser.nome ?? user?.nome,
+        });
+      }
+
+      Alert.alert("Sucesso", "Foto de perfil atualizada.");
+    } catch (error: any) {
+      Alert.alert(
+        "Erro",
+        error?.response?.data?.error || "Não foi possível atualizar a foto."
+      );
+    } finally {
+      setUploadingAvatar(false);
+    }
+  }
+
+  async function handlePickFromGallery() {
+    setAvatarModalVisible(false);
+
     const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
 
     if (!permission.granted) {
@@ -58,48 +94,55 @@ export default function ProfileScreen() {
     const asset = result.assets?.[0];
     if (!asset?.uri) return;
 
-    try {
-      const formData = new FormData();
+    await uploadAvatar(asset);
+  }
 
-      formData.append("avatar", {
-        uri: asset.uri,
-        name: `avatar-${Date.now()}.jpg`,
-        type: "image/jpeg",
-      } as any);
+  async function handleTakePhoto() {
+    setAvatarModalVisible(false);
 
-      const response = await api.post("/users/me/avatar", formData, {
-        headers: {
-          "Content-Type": "multipart/form-data",
-        },
-      });
+    const permission = await ImagePicker.requestCameraPermissionsAsync();
 
-      const nextUser = response.data?.user;
-      if (nextUser?.avatar) {
-        await updateUser({ avatar: nextUser.avatar });
-      }
-
-      Alert.alert("Sucesso", "Foto de perfil atualizada.");
-    } catch (error: any) {
+    if (!permission.granted) {
       Alert.alert(
-        "Erro",
-        error?.response?.data?.error || "Não foi possível atualizar a foto."
+        "Permissão necessária",
+        "Precisamos da sua permissão para acessar a câmera."
       );
+      return;
     }
+
+    const result = await ImagePicker.launchCameraAsync({
+      allowsEditing: true,
+      aspect: [1, 1],
+      quality: 0.8,
+    });
+
+    if (result.canceled) return;
+
+    const asset = result.assets?.[0];
+    if (!asset?.uri) return;
+
+    await uploadAvatar(asset);
   }
 
   async function removeProfilePhoto() {
+    setAvatarModalVisible(false);
+
     try {
+      setUploadingAvatar(true);
+
       await api.delete("/users/me/avatar");
       await updateUser({ avatar: null });
+
       Alert.alert("Sucesso", "Foto removida com sucesso.");
     } catch (error: any) {
       Alert.alert(
         "Erro",
         error?.response?.data?.error || "Não foi possível remover a foto."
       );
+    } finally {
+      setUploadingAvatar(false);
     }
   }
-
 
   return (
     <View style={styles.root}>
@@ -112,6 +155,13 @@ export default function ProfileScreen() {
           showsVerticalScrollIndicator={false}
           contentContainerStyle={styles.scrollContent}
         >
+          {uploadingAvatar ? (
+            <View style={styles.uploadingBox}>
+              <ActivityIndicator size="large" color="#E62325" />
+              <Text style={styles.uploadingText}>Atualizando foto...</Text>
+            </View>
+          ) : null}
+
           <Text style={styles.sectionTitle}>Configurações</Text>
           <View style={styles.sectionLine} />
 
@@ -128,7 +178,6 @@ export default function ProfileScreen() {
               onPress={() => router.push("/notifications")}
             />
 
-
             <ProfileMenuItem
               icon="information-circle-outline"
               title="Sobre nós"
@@ -141,10 +190,17 @@ export default function ProfileScreen() {
             title="Configurações"
             onPress={() => router.push("/profile/settings")}
           />
-
-       
         </ScrollView>
       </View>
+
+      <AvatarPickerModal
+        visible={avatarModalVisible}
+        hasPhoto={!!(user?.avatar || user?.picture)}
+        onClose={() => setAvatarModalVisible(false)}
+        onCamera={handleTakePhoto}
+        onGallery={handlePickFromGallery}
+        onRemove={removeProfilePhoto}
+      />
 
       <NavFooter />
     </View>
@@ -171,6 +227,19 @@ const styles = StyleSheet.create({
     paddingBottom: 140,
   },
 
+  uploadingBox: {
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: 16,
+  },
+
+  uploadingText: {
+    marginTop: 10,
+    color: "#31358B",
+    fontWeight: "800",
+    fontSize: 14,
+  },
+
   sectionTitle: {
     fontSize: 20,
     fontWeight: "900",
@@ -184,7 +253,6 @@ const styles = StyleSheet.create({
     borderRadius: 999,
     backgroundColor: "#FBBC04",
   },
-
 
   logoutText: {
     color: "#fff",

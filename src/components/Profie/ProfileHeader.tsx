@@ -16,11 +16,10 @@ export function ProfileHeader({ user, onPressChangePhoto }: Props) {
   return (
     <View style={styles.header}>
       <View style={styles.avatarWrap}>
-        {avatarUri ? (
-          <Image source={{ uri: avatarUri }} style={styles.avatar} />
-        ) : (
-          <Image source={DEFAULT_AVATAR} style={styles.avatar} />
-        )}
+        <Image
+          source={avatarUri ? { uri: avatarUri } : DEFAULT_AVATAR}
+          style={styles.avatar}
+        />
 
         <Pressable onPress={onPressChangePhoto} style={styles.cameraBtn}>
           <Ionicons name="camera" size={18} color="#fff" />
