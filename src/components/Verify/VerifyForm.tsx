@@ -1,7 +1,6 @@
 import { useAuth } from "@/src/contexts/AuthContext";
 import { api } from "@/src/services/api";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import * as SecureStore from "expo-secure-store";
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
   Animated,
@@ -21,31 +20,19 @@ import VerifyHero from "./VerifyHero";
 
 type AlertType = "error" | "success" | "info";
 
-type StoredUser = {
-  id: string;
-  email?: string;
-  phone?: string | null;
-  emailVerified?: boolean;
-  phoneVerified?: boolean;
-  [key: string]: any;
-};
-
 export default function VerifyForm() {
   const router = useRouter();
   const params = useLocalSearchParams();
+  const { signInWithToken } = useAuth();
 
   const emailParam = Array.isArray(params.email)
     ? params.email[0]
     : (params.email as string | undefined);
 
-  const phoneParam = Array.isArray(params.phone)
-    ? params.phone[0]
-    : (params.phone as string | undefined);
-
-  const email = useMemo(() => (emailParam || "").trim().toLowerCase(), [emailParam]);
-  const phone = useMemo(() => (phoneParam || "").trim(), [phoneParam]);
-
-  const [method, setMethod] = useState<"email" | "sms">("email");
+  const email = useMemo(
+    () => (emailParam || "").trim().toLowerCase(),
+    [emailParam]
+  );
 
   const [alertVisible, setAlertVisible] = useState(false);
   const [alertType, setAlertType] = useState<AlertType>("info");
@@ -72,25 +59,16 @@ export default function VerifyForm() {
   const [countdown, setCountdown] = useState(30);
   const [isCounting, setIsCounting] = useState(true);
   const [resendLoading, setResendLoading] = useState(false);
-  const { signInWithToken } = useAuth();
 
   useEffect(() => {
-    if (email) {
-      setMethod("email");
-      return;
+    if (!email) {
+      showAlert(
+        "error",
+        "Erro",
+        "E-mail não encontrado. Volte e tente novamente."
+      );
     }
-
-    if (phone) {
-      setMethod("sms");
-      return;
-    }
-
-    showAlert(
-      "error",
-      "Erro",
-      "Não foi possível identificar e-mail ou telefone. Faça login novamente."
-    );
-  }, [email, phone]);
+  }, [email]);
 
   useEffect(() => {
     const showSub = Keyboard.addListener("keyboardDidShow", () => {
@@ -99,8 +77,16 @@ export default function VerifyForm() {
       heroScaleY.setValue(1);
 
       Animated.parallel([
-        Animated.timing(heroOpacity, { toValue: 0, duration: 200, useNativeDriver: true }),
-        Animated.timing(heroScaleY, { toValue: 0, duration: 160, useNativeDriver: true }),
+        Animated.timing(heroOpacity, {
+          toValue: 0,
+          duration: 200,
+          useNativeDriver: true,
+        }),
+        Animated.timing(heroScaleY, {
+          toValue: 0,
+          duration: 160,
+          useNativeDriver: true,
+        }),
       ]).start(({ finished }) => {
         if (finished) setRenderHero(false);
       });
@@ -112,8 +98,16 @@ export default function VerifyForm() {
       heroScaleY.setValue(0);
 
       Animated.parallel([
-        Animated.timing(heroOpacity, { toValue: 1, duration: 220, useNativeDriver: true }),
-        Animated.timing(heroScaleY, { toValue: 1, duration: 220, useNativeDriver: true }),
+        Animated.timing(heroOpacity, {
+          toValue: 1,
+          duration: 220,
+          useNativeDriver: true,
+        }),
+        Animated.timing(heroScaleY, {
+          toValue: 1,
+          duration: 220,
+          useNativeDriver: true,
+        }),
       ]).start();
     });
 
@@ -134,17 +128,18 @@ export default function VerifyForm() {
     inputsRef.current[i]?.focus();
   };
 
-  const clearOtp = () => {
-    setOtp(Array(OTP_LENGTH).fill(""));
-  };
-
   const setOtpFromString = (raw: string, startIndex = 0) => {
-    const digits = (raw || "").replace(/\D/g, "").slice(0, OTP_LENGTH - startIndex);
+    const digits = (raw || "")
+      .replace(/\D/g, "")
+      .slice(0, OTP_LENGTH - startIndex);
+
     if (!digits.length) return;
 
     setOtp((prev) => {
       const next = [...prev];
-      for (let k = 0; k < digits.length; k++) next[startIndex + k] = digits[k];
+      for (let k = 0; k < digits.length; k++) {
+        next[startIndex + k] = digits[k];
+      }
       return next;
     });
 
@@ -168,7 +163,9 @@ export default function VerifyForm() {
       return next;
     });
 
-    if (digit && index < OTP_LENGTH - 1) focusIndex(index + 1);
+    if (digit && index < OTP_LENGTH - 1) {
+      focusIndex(index + 1);
+    }
   };
 
   const handleKeyPress = (e: any, index: number) => {
@@ -202,149 +199,49 @@ export default function VerifyForm() {
     return () => clearInterval(timer);
   }, [isCounting]);
 
-  const switchMethod = async (next: "email" | "sms") => {
-    if (next === "sms" && !phone) {
-      showAlert(
-        "info",
-        "Sem telefone",
-        "Você não informou telefone. Continue pela verificação por e-mail."
-      );
-      setMethod("email");
-      clearOtp();
-      setCountdown(30);
-      setIsCounting(true);
-      return;
-    }
-
-    if (next === "email" && !email) {
-      showAlert(
-        "info",
-        "Sem e-mail",
-        "Você não informou e-mail. Continue pela verificação por SMS."
-      );
-      setMethod("sms");
-      clearOtp();
-      setCountdown(0);
-      setIsCounting(false);
-      return;
-    }
-
-    setMethod(next);
-    clearOtp();
-
-    if (next === "email") {
-      setCountdown(30);
-      setIsCounting(true);
-    } else {
-      setCountdown(0);
-      setIsCounting(false);
-    }
-  };
-
-  async function patchStoredUser(flags: {
-    emailVerified?: boolean;
-    phoneVerified?: boolean;
-  }) {
-    try {
-      const storedUser = await SecureStore.getItemAsync("user");
-      if (!storedUser) return null;
-
-      const user: StoredUser = JSON.parse(storedUser);
-
-      const nextUser: StoredUser = {
-        ...user,
-        ...(flags.emailVerified !== undefined ? { emailVerified: flags.emailVerified } : {}),
-        ...(flags.phoneVerified !== undefined ? { phoneVerified: flags.phoneVerified } : {}),
-      };
-
-      await SecureStore.setItemAsync("user", JSON.stringify(nextUser));
-      return nextUser;
-    } catch {
-      return null;
-    }
-  }
-
-  const goInsideApp = async (verifiedMethod: "email" | "sms") => {
-    const updated = await patchStoredUser({
-      emailVerified: verifiedMethod === "email" ? true : undefined,
-      phoneVerified: verifiedMethod === "sms" ? true : undefined,
-    });
-
-    const stillMissingOtherFactor =
-      verifiedMethod === "email"
-        ? !!updated?.phone && !updated?.phoneVerified
-        : !!updated?.email && !updated?.emailVerified;
-
-    if (stillMissingOtherFactor) {
-      showAlert(
-        "success",
-        "Conta liberada",
-        verifiedMethod === "email"
-          ? "Seu e-mail foi verificado. Você já pode usar o app e verificar o telefone depois."
-          : "Seu telefone foi verificado. Você já pode usar o app e verificar o e-mail depois."
-      );
-    } else {
-      showAlert("success", "Verificado 🎉", "Conta verificada com sucesso!");
-    }
-
-    setTimeout(() => {
-      router.replace("/home");
-    }, 700);
-  };
-
   const handleConfirm = async () => {
     const fullCode = otp.join("");
 
     if (fullCode.length < 6) {
-      showAlert("info", "Código incompleto", "Por favor, preencha os 6 dígitos.");
+      showAlert(
+        "info",
+        "Código incompleto",
+        "Por favor, preencha os 6 dígitos."
+      );
       return;
     }
 
-    if (method === "email" && !email) {
-      showAlert("error", "Erro", "E-mail não encontrado. Volte e tente novamente.");
-      return;
-    }
-
-    if (method === "sms" && !phone) {
-      showAlert("info", "Sem telefone", "Você não informou telefone. Verifique por e-mail.");
+    if (!email) {
+      showAlert(
+        "error",
+        "Erro",
+        "E-mail não encontrado. Volte e tente novamente."
+      );
       return;
     }
 
     setLoading(true);
     try {
-      if (method === "email") {
-        const response = await api.post("/auth/verify-email", {
-          email,
-          code: fullCode,
-        });
+      const response = await api.post("/auth/verify-email", {
+        email,
+        code: fullCode,
+      });
 
-        const { token, user } = response.data;
+      const { token, user } = response.data;
 
-        if (token && user) {
-          await signInWithToken(token, user);
-          router.replace("/home");
-          return;
-        }
-        await goInsideApp("email");
-
-      } else {
-        const response = await api.post("/auth/verify-phone", {
-          phone,
-          code: fullCode,
-        });
-
-        const { token, user } = response.data;
-
-        if (token && user) {
-          await signInWithToken(token, user);
-          router.replace("/home");
-          return;
-        }
-
-        await goInsideApp("sms");
+      if (token && user) {
+        await signInWithToken(token, user);
+        router.replace("/home");
+        return;
       }
+
+      showAlert("success", "Verificado 🎉", "Conta criada com sucesso!");
+      setTimeout(() => {
+        router.replace("/home");
+      }, 700);
     } catch (error: any) {
-      const message = error?.response?.data?.error || "Erro ao verificar código.";
+      const message =
+        error?.response?.data?.error || "Erro ao verificar código.";
       showAlert("error", "Erro", message);
     } finally {
       setLoading(false);
@@ -354,49 +251,35 @@ export default function VerifyForm() {
   const handleResend = async () => {
     if (isCounting || resendLoading) return;
 
-    if (method === "email" && !email) {
-      showAlert("error", "Erro", "E-mail não encontrado. Volte e tente novamente.");
+    if (!email) {
+      showAlert(
+        "error",
+        "Erro",
+        "E-mail não encontrado. Volte e tente novamente."
+      );
       return;
     }
 
     setResendLoading(true);
-
     try {
-      if (method === "email") {
-        await api.post("/auth/resend-email-code", { email });
-        showAlert("success", "E-mail enviado 📩", "Novo código enviado para seu e-mail!");
-      } else {
-        if (!phone) {
-          showAlert("info", "Sem telefone", "Você não informou telefone. Verifique por e-mail.");
-          return;
-        }
+      await api.post("/auth/resend-email-code", { email });
 
-        await api.post("/auth/resend-code", { phone });
-        showAlert("success", "SMS enviado 📩", "Novo código enviado por SMS!");
-      }
+      showAlert(
+        "success",
+        "E-mail enviado 📩",
+        "Novo código enviado para seu e-mail!"
+      );
 
       setCountdown(30);
       setIsCounting(true);
     } catch (error: any) {
-      const code = error?.response?.data?.code;
       const retryAfter = error?.response?.data?.retryAfter;
-      const message = error?.response?.data?.error || "Erro ao reenviar código.";
+      const message =
+        error?.response?.data?.error || "Erro ao reenviar código.";
 
       if (retryAfter && typeof retryAfter === "number") {
         setCountdown(retryAfter);
         setIsCounting(true);
-      }
-
-      if (code === "SMS_UNAVAILABLE") {
-        showAlert(
-          "info",
-          "SMS indisponível",
-          "O SMS não está disponível no momento. Continue pela verificação por e-mail."
-        );
-        setMethod("email");
-        setCountdown(30);
-        setIsCounting(true);
-        return;
       }
 
       showAlert("error", "Erro", message);
@@ -426,14 +309,12 @@ export default function VerifyForm() {
                     overflow: "hidden",
                   }}
                 >
-                  <VerifyHero method={method} />
+                  <VerifyHero method="email" />
                 </Animated.View>
               )}
 
               <Text style={styles.title}>
-                {method === "email"
-                  ? "Verifique seu e-mail com o código que enviamos."
-                  : "Verifique seu telefone com o código recebido por SMS."}
+                Verifique seu e-mail com o código que enviamos.
               </Text>
 
               <View style={styles.otpContainer}>
@@ -459,19 +340,20 @@ export default function VerifyForm() {
                 ))}
               </View>
 
-              <Text style={styles.resend}>
-                {method === "email" ? "Não recebeu o e-mail?" : "Você não recebeu o SMS?"}
-              </Text>
+              <Text style={styles.resend}>Não recebeu o e-mail?</Text>
 
               <Pressable onPress={handleResend} disabled={isCounting || resendLoading}>
-                <Text style={[styles.resendBold, (isCounting || resendLoading) && { opacity: 0.5 }]}>
+                <Text
+                  style={[
+                    styles.resendBold,
+                    (isCounting || resendLoading) && { opacity: 0.5 },
+                  ]}
+                >
                   {isCounting
                     ? `Reenviar em 00:${countdown.toString().padStart(2, "0")}`
                     : resendLoading
-                      ? "Enviando..."
-                      : method === "email"
-                        ? "REENVIAR E-MAIL"
-                        : "ENVIAR/REENVIAR SMS"}
+                    ? "Enviando..."
+                    : "REENVIAR E-MAIL"}
                 </Text>
               </Pressable>
 
@@ -482,25 +364,15 @@ export default function VerifyForm() {
                 onPress={handleConfirm}
                 disabled={loading}
               >
-                <Text style={styles.buttonText}>{loading ? "Processando..." : "Confirmar"}</Text>
+                <Text style={styles.buttonText}>
+                  {loading ? "Processando..." : "Confirmar"}
+                </Text>
               </Pressable>
 
               <View style={{ marginBottom: 50, alignItems: "center" }}>
-                {method === "email" ? (
-                  <Text style={{ color: "#535353", textAlign: "center" }}>
-                    Deseja verificar de outra forma?{" "}
-                    <Text style={{ color: "#E62325", fontWeight: "600" }} onPress={() => switchMethod("sms")}>
-                      Enviar SMS
-                    </Text>
-                  </Text>
-                ) : (
-                  <Text style={{ color: "#535353", textAlign: "center" }}>
-                    Deseja voltar para e-mail?{" "}
-                    <Text style={{ color: "#E62325", fontWeight: "600" }} onPress={() => switchMethod("email")}>
-                      Verificar por e-mail
-                    </Text>
-                  </Text>
-                )}
+                <Text style={{ color: "#535353", textAlign: "center" }}>
+                  Você poderá verificar seu telefone depois no perfil.
+                </Text>
               </View>
             </View>
           </View>

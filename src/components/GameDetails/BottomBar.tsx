@@ -9,6 +9,7 @@ type Props = {
   watching?: boolean;
   loadingWatch?: boolean;
   onToggleWatch?: () => void;
+  rentedByMe?: boolean; 
 };
 
 export function BottomBar({
@@ -18,10 +19,9 @@ export function BottomBar({
   watching,
   loadingWatch,
   onToggleWatch,
+  rentedByMe,
 }: Props) {
-
   const insets = useSafeAreaInsets();
-
   const priceText = Number(price ?? 0).toFixed(2);
 
   return (
@@ -35,6 +35,11 @@ export function BottomBar({
           <Pressable onPress={onPressRent} style={styles.btn}>
             <Text style={styles.btnText}>Alugar</Text>
           </Pressable>
+        ) : rentedByMe ? (
+          <View style={styles.rentedBtn}>
+            <Ionicons name="checkmark-circle" size={18} color="#fff" />
+            <Text style={styles.rentedText}>Em aluguel</Text>
+          </View>
         ) : (
           <Pressable onPress={onToggleWatch} style={styles.notifyBtn}>
             {loadingWatch ? (
@@ -125,6 +130,23 @@ const styles = StyleSheet.create({
 
   notifyText: {
     color: "#111",
+    fontWeight: "900",
+    fontSize: 14,
+  },
+
+  rentedBtn: {
+    backgroundColor: "#31358B",
+    height: 52,
+    paddingHorizontal: 20,
+    borderRadius: 18,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    justifyContent: "center",
+  },
+
+  rentedText: {
+    color: "#fff",
     fontWeight: "900",
     fontSize: 14,
   },

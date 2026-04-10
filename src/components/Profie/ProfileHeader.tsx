@@ -2,7 +2,7 @@ import { AuthUser } from "@/src/contexts/AuthContext";
 import { Ionicons } from "@expo/vector-icons";
 import { Image, Pressable, StyleSheet, Text, View } from "react-native";
 
-const DEFAULT_AVATAR = require("../../../assets/profile-default.png");
+const DEFAULT_AVATAR = require("../../../assets/logo-dice.png");
 
 type Props = {
   user: AuthUser | null;

@@ -39,6 +39,9 @@ type GameDetails = {
   minAge?: number | null;
   minTime?: number | null;
   maxTime?: number | null;
+
+  isAvailableNow?: boolean;
+  rentedByMe?: boolean;
 };
 
 type Copy = {
@@ -235,7 +238,7 @@ export default function GameDetailsScreen() {
 
     try {
       await api.post("/rentals", { gameId: game.id });
-      showAlert("success", "Aluguel realizado!", "Retire o seu jogo na Biblioteca IFMA - Campus Timon");
+      showAlert("success", "Pedido de aluguel solocitado!", "Retire o seu jogo na Biblioteca IFMA - Campus Timon");
       setRentOpen(false);
       await fetchDetails();
     } catch (e: any) {
@@ -516,7 +519,8 @@ export default function GameDetailsScreen() {
 
           <BottomBar
             price={game.price}
-            unavailable={!game.available}
+            unavailable={!game.isAvailableNow}
+            rentedByMe={game.rentedByMe}
             watching={watching}
             loadingWatch={loadingWatch}
             onToggleWatch={toggleWatch}
