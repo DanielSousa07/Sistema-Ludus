@@ -193,6 +193,15 @@ export const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: "500",
   },
+  googleTermsBottomText: {
+    marginTop: -26,
+    marginBottom: 26,
+    flex: 1,
+    fontSize: 11,
+    lineHeight: 20,
+    color: "#535353",
+    fontWeight: "600",
+  },
 
   register: {
     textAlign: "center",

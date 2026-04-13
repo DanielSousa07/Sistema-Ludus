@@ -410,6 +410,10 @@ export default function RegisterForm() {
           disabled={googleLoading || loading}
           onPress={handleGoogle}
         />
+        <Text style={styles.googleTermsBottomText}>
+          Ao entrar com Google você concorda automaticamente com os 
+          <Text style={styles.checkLink} onPress={() => router.replace("/terms")}>Termos de Uso</Text> e a <Text style={styles.checkLink} onPress={() => router.replace("/privacy-policy")}>Política de Privacidade</Text>.
+          </Text>
 
         <Text style={styles.register}>
           Já possui uma conta?{" "}

@@ -3,7 +3,7 @@ import * as SecureStore from "expo-secure-store";
 import { goToVerify } from "./navigation";
 
 export const api = axios.create({
-  baseURL: "http://192.168.18.153:3000",
+  baseURL: "https://backend-ludus-production.up.railway.app",
 });
 
 api.interceptors.request.use(async (config) => {
