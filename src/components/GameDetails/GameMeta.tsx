@@ -2,6 +2,16 @@ import { Ionicons } from "@expo/vector-icons";
 import { useState } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 
+type GameTier = "LATAO" | "BRONZE" | "PRATA" | "OURO" | "DIAMANTE";
+
+const TIER_META: Record<GameTier, { label: string; color: string; bg: string; icon: string }> = {
+  LATAO:    { label: "Latão",    color: "#8B7355", bg: "#F5EFE6", icon: "shield-outline" },
+  BRONZE:   { label: "Bronze",   color: "#CD7F32", bg: "#FBF0E6", icon: "shield-half-outline" },
+  PRATA:    { label: "Prata",    color: "#7A7A7A", bg: "#F2F2F2", icon: "shield" },
+  OURO:     { label: "Ouro",     color: "#B8860B", bg: "#FFFBE6", icon: "star-outline" },
+  DIAMANTE: { label: "Diamante", color: "#0277BD", bg: "#E3F2FD", icon: "diamond-outline" },
+};
+
 type Props = {
   title: string;
   avgRating: number;
@@ -11,6 +21,9 @@ type Props = {
   available?: boolean;
   rentalDaysText?: string;
   availabilityForecast?: string | null;
+
+  // RF017
+  tier?: string | null;
 };
 
 export function GameMeta({
@@ -21,6 +34,7 @@ export function GameMeta({
   available = false,
   rentalDaysText = "Até 3 dias",
   availabilityForecast,
+  tier,
 }: Props) {
   const [expanded, setExpanded] = useState(false);
 
@@ -32,6 +46,10 @@ export function GameMeta({
   const statusText = available ? "Disponível agora" : "Indisponível no momento";
   const statusColor = available ? "#2E7D32" : "#E62325";
   const statusBg = available ? "#EAF7EE" : "#FFE9EA";
+
+
+  const tierKey = (tier as GameTier) ?? null;
+  const tierMeta = tierKey && TIER_META[tierKey] ? TIER_META[tierKey] : null;
 
   return (
     <View style={styles.wrap}>
@@ -58,17 +76,22 @@ export function GameMeta({
 
       <Text style={styles.title}>{title}</Text>
 
+      
+      {tierMeta && (
+        <View style={[styles.tierBadge, { backgroundColor: tierMeta.bg }]}>
+          <Ionicons name={tierMeta.icon as any} size={14} color={tierMeta.color} />
+          <Text style={[styles.tierText, { color: tierMeta.color }]}>
+            Tier {tierMeta.label}
+          </Text>
+        </View>
+      )}
+
       <Pressable
         onPress={() => setExpanded((v) => !v)}
         style={styles.statusRow}
       >
         <View style={[styles.statusPill, { backgroundColor: statusBg }]}>
-          <View
-            style={[
-              styles.statusDot,
-              { backgroundColor: statusColor },
-            ]}
-          />
+          <View style={[styles.statusDot, { backgroundColor: statusColor }]} />
           <Text style={[styles.statusText, { color: statusColor }]}>
             {statusText}
           </Text>
@@ -154,6 +177,23 @@ const styles = StyleSheet.create({
     lineHeight: 30,
     fontWeight: "900",
     color: "#444",
+  },
+
+  // RF017
+  tierBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 5,
+    alignSelf: "flex-start",
+    marginTop: 8,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 20,
+  },
+
+  tierText: {
+    fontSize: 12,
+    fontWeight: "800",
   },
 
   statusRow: {

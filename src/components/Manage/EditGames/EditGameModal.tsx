@@ -16,6 +16,16 @@ import {
 import { ConfirmDeleteModal } from "./ConfirmDeleteModal";
 import { GameComponentsModal } from "./GameComponentsModal";
 
+type GameTier = "LATAO" | "BRONZE" | "PRATA" | "OURO" | "DIAMANTE";
+
+const TIERS: { value: GameTier; label: string; color: string; icon: string }[] = [
+  { value: "LATAO",    label: "Latão",    color: "#8B7355", icon: "shield-outline" },
+  { value: "BRONZE",   label: "Bronze",   color: "#CD7F32", icon: "shield-half-outline" },
+  { value: "PRATA",    label: "Prata",    color: "#A0A0A0", icon: "shield" },
+  { value: "OURO",     label: "Ouro",     color: "#FFD700", icon: "star-outline" },
+  { value: "DIAMANTE", label: "Diamante", color: "#4FC3F7", icon: "diamond-outline" },
+];
+
 export function EditGameModal({
   visible,
   game,
@@ -37,6 +47,7 @@ export function EditGameModal({
   const [description, setDescription] = useState("");
   const [howToPlayUrl, setHowToPlayUrl] = useState("");
   const [available, setAvailable] = useState(true);
+  const [tier, setTier] = useState<GameTier>("BRONZE");
 
   useEffect(() => {
     if (!game) return;
@@ -46,6 +57,7 @@ export function EditGameModal({
     setDescription(game.description ?? "");
     setHowToPlayUrl(game.howToPlayUrl ?? "");
     setAvailable(game.available !== false);
+    setTier((game.tier as GameTier) ?? "BRONZE");
   }, [game]);
 
   const priceNumber = useMemo(() => {
@@ -102,6 +114,39 @@ export function EditGameModal({
                   placeholderTextColor="#666"
                   keyboardType="decimal-pad"
                 />
+              </View>
+
+              {/* RF017 — Seletor de Tier */}
+              <Text style={styles.label}>Tier do jogo</Text>
+              <View style={styles.tierRow}>
+                {TIERS.map((t) => {
+                  const active = tier === t.value;
+                  return (
+                    <Pressable
+                      key={t.value}
+                      onPress={() => setTier(t.value)}
+                      style={[
+                        styles.tierBtn,
+                        active && { backgroundColor: t.color, borderColor: t.color },
+                      ]}
+                    >
+                      <Ionicons
+                        name={t.icon as any}
+                        size={18}
+                        color={active ? "#fff" : t.color}
+                      />
+                      <Text
+                        style={[
+                          styles.tierLabel,
+                          active && { color: "#fff" },
+                          !active && { color: t.color },
+                        ]}
+                      >
+                        {t.label}
+                      </Text>
+                    </Pressable>
+                  );
+                })}
               </View>
 
               <View style={styles.switchRow}>
@@ -162,6 +207,7 @@ export function EditGameModal({
                       description,
                       howToPlayUrl,
                       available,
+                      tier,
                     })
                   }
                   style={styles.saveBtn}
@@ -214,8 +260,8 @@ const styles = StyleSheet.create({
     borderTopLeftRadius: 32,
     borderTopRightRadius: 32,
     padding: 24,
-    height: "88%",
-    marginBottom: -16
+    height: "92%",
+    marginBottom: -16,
   },
 
   header: {
@@ -268,6 +314,29 @@ const styles = StyleSheet.create({
 
   textArea: {
     height: 100,
+  },
+
+  tierRow: {
+    flexDirection: "row",
+    gap: 8,
+    flexWrap: "wrap",
+  },
+
+  tierBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 5,
+    paddingHorizontal: 12,
+    paddingVertical: 9,
+    borderRadius: 12,
+    borderWidth: 1.5,
+    borderColor: "#E0E0E0",
+    backgroundColor: "#F8F8F8",
+  },
+
+  tierLabel: {
+    fontSize: 13,
+    fontWeight: "800",
   },
 
   switchRow: {

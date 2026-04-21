@@ -42,6 +42,9 @@ type GameDetails = {
 
   isAvailableNow?: boolean;
   rentedByMe?: boolean;
+
+  // RF017
+  tier?: string | null;
 };
 
 type Copy = {
@@ -267,6 +270,11 @@ export default function GameDetailsScreen() {
         return;
       }
 
+      if (code === "TIER_ACCESS_DENIED") {
+        showAlert("error", "Acesso restrito", msg || "Sua categoria de cliente não permite alugar este jogo.");
+        return;
+      }
+
       showAlert("error", "Erro", msg || "Não foi possível alugar. Tente novamente.");
     }
   }, [game, fetchDetails, showAlert]);
@@ -297,6 +305,11 @@ export default function GameDetailsScreen() {
 
         if (code === "COPY_UNAVAILABLE") {
           showAlert("error", "Exemplar indisponível", "Esse exemplar acabou de ficar indisponível. Atualize e tente outro.");
+          return;
+        }
+
+        if (code === "TIER_ACCESS_DENIED") {
+          showAlert("error", "Acesso restrito", msg || "Sua categoria de cliente não permite alugar este jogo.");
           return;
         }
 
@@ -441,6 +454,7 @@ export default function GameDetailsScreen() {
                 available={!!game.available}
                 rentalDaysText="Até 3 dias"
                 availabilityForecast={null}
+                tier={game.tier}
               />
 
               <GameFactsRow players={playersText} time={timeText} age={ageText} />

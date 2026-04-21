@@ -17,15 +17,16 @@ import {
   View,
 } from "react-native";
 
+// RF017 — Tier adicionado ao tipo de jogo
 export type ManageGame = {
   id: string;
   title: string;
   cover?: string | null;
   price: number;
   available?: boolean;
+  tier?: string | null;        // "LATAO" | "BRONZE" | "PRATA" | "OURO" | "DIAMANTE"
 
   description?: string | null;
-
   howToPlayUrl?: string | null;
   components?: string | null;
 
@@ -43,20 +44,14 @@ export default function EditGamesScreen() {
 
   const filtered = useMemo(() => {
     const term = q.trim().toLowerCase();
-
     if (!term) return games;
-
-    return games.filter((g) =>
-      g.title.toLowerCase().includes(term)
-    );
+    return games.filter((g) => g.title.toLowerCase().includes(term));
   }, [q, games]);
 
   async function fetchGames() {
     setLoading(true);
-
     try {
       const res = await api.get<ManageGame[]>("/games");
-
       setGames(res.data || []);
     } catch (err) {
       console.log("Erro ao buscar jogos:", err);
@@ -72,10 +67,16 @@ export default function EditGamesScreen() {
 
   async function handleSave(next: Partial<ManageGame> & { id: string }) {
     try {
+      // Salva campos gerais
       const res = await api.patch(`/games/${next.id}`, next);
 
+      // RF017 — se o tier mudou, chama o endpoint específico de tier
+      if (next.tier) {
+        await api.patch(`/categories/games/${next.id}/tier`, { tier: next.tier });
+      }
+
       setGames((prev) =>
-        prev.map((g) => (g.id === next.id ? res.data : g))
+        prev.map((g) => (g.id === next.id ? { ...res.data, tier: next.tier } : g))
       );
 
       setSelected(null);
@@ -87,14 +88,15 @@ export default function EditGamesScreen() {
   async function handleDelete(id: string) {
     try {
       await api.delete(`/games/${id}`);
-
       setGames((prev) => prev.filter((g) => g.id !== id));
-
       setSelected(null);
     } catch (err) {
       const error = err as any;
       console.log("Erro ao deletar jogo:", err);
-      Alert.alert("Erro", error.message || "Não foi possível deletar o jogo. Tente novamente mais tarde.");
+      Alert.alert(
+        "Erro",
+        error.message || "Não foi possível deletar o jogo. Tente novamente mais tarde."
+      );
     }
   }
 
@@ -111,14 +113,13 @@ export default function EditGamesScreen() {
           <View style={{ flex: 1 }}>
             <Text style={styles.title}>Editar Jogos</Text>
             <Text style={styles.subtitle}>
-              Atualize preço, descrição e disponibilidade
+              Atualize preço, tier e disponibilidade
             </Text>
           </View>
         </View>
 
         <View style={styles.searchBar}>
           <Ionicons name="search" size={20} color="#535353" />
-
           <TextInput
             style={styles.input}
             placeholder="Buscar jogo..."
@@ -142,21 +143,12 @@ export default function EditGamesScreen() {
             ListEmptyComponent={
               <View style={styles.emptyWrap}>
                 <Ionicons name="create-outline" size={46} color="#999" />
-
-                <Text style={styles.emptyTitle}>
-                  Nenhum jogo encontrado
-                </Text>
-
-                <Text style={styles.emptySubtitle}>
-                  Tente buscar por outro nome.
-                </Text>
+                <Text style={styles.emptyTitle}>Nenhum jogo encontrado</Text>
+                <Text style={styles.emptySubtitle}>Tente buscar por outro nome.</Text>
               </View>
             }
             renderItem={({ item }) => (
-              <ManageGameRow
-                item={item}
-                onPress={() => setSelected(item)}
-              />
+              <ManageGameRow item={item} onPress={() => setSelected(item)} />
             )}
           />
         )}
