@@ -7,9 +7,16 @@ type Props = {
   email: string;
   avatar?: string | null;
   picture?: string | null;
+
   points: number;
   level: number;
   levelLabel: string;
+
+
+  clientCategory: string;
+  nextCategory: string | null;
+  progress: number; // 0 a 1
+  rentalsCount: number;
 };
 
 export function AccountSummaryCard({
@@ -20,8 +27,39 @@ export function AccountSummaryCard({
   points,
   level,
   levelLabel,
+
+  clientCategory,
+  nextCategory,
+  progress,
+  rentalsCount,
 }: Props) {
+  function getCategoryAccess(category: string) {
+    switch (category) {
+      case "STARTER":
+        return ["Latão", "Bronze"];
+
+      case "FAMILY":
+        return ["Latão", "Bronze", "Prata"];
+
+      case "EXPERT":
+        return ["Latão", "Bronze", "Prata", "Ouro"];
+
+      case "ULTRAGAMER":
+        return ["Todos os níveis"];
+
+      default:
+        return [];
+    }
+  }
   const displayAvatar = avatar || picture || null;
+
+  const progressPercent = Math.round(progress * 100);
+  const accessList = getCategoryAccess(clientCategory);
+
+  const current = rentalsCount % 10 === 0 && rentalsCount !== 0
+    ? 10
+    : rentalsCount % 10;
+
 
   return (
     <View style={styles.card}>
@@ -49,6 +87,36 @@ export function AccountSummaryCard({
       </View>
 
       <Text style={styles.levelName}>{levelLabel}</Text>
+
+
+      <View style={styles.categoryBox}>
+        <Text style={styles.categoryTitle}>
+          {clientCategory}
+        </Text>
+
+        <Text style={styles.categoryAccess}>
+          Acesso: {accessList.join(", ")}
+        </Text>
+
+        {nextCategory && (
+          <Text style={styles.categoryNext}>
+            Próximo: {nextCategory}
+          </Text>
+        )}
+
+        <View style={styles.progressBar}>
+          <View
+            style={[
+              styles.progressFill,
+              { width: `${progressPercent}%` },
+            ]}
+          />
+        </View>
+
+        <Text style={styles.progressText}>
+          {current}/10 aluguéis • {progressPercent}%
+        </Text>
+      </View>
     </View>
   );
 }
@@ -62,6 +130,12 @@ const styles = StyleSheet.create({
     borderColor: "rgba(49,53,139,0.08)",
     marginBottom: 24,
   },
+  categoryAccess: {
+  fontSize: 12,
+  fontWeight: "700",
+  color: "#6E7385",
+  marginTop: 4,
+},
 
   top: {
     flexDirection: "row",
@@ -128,5 +202,48 @@ const styles = StyleSheet.create({
     color: "#31358B",
     fontSize: 14,
     fontWeight: "800",
+  },
+
+
+  categoryBox: {
+    marginTop: 16,
+    padding: 12,
+    borderRadius: 16,
+    backgroundColor: "#FFFFFF",
+    borderWidth: 1,
+    borderColor: "#EEE",
+  },
+
+  categoryTitle: {
+    fontSize: 16,
+    fontWeight: "900",
+    color: "#31358B",
+  },
+
+  categoryNext: {
+    fontSize: 12,
+    fontWeight: "700",
+    color: "#6E7385",
+    marginTop: 2,
+  },
+
+  progressBar: {
+    marginTop: 10,
+    height: 10,
+    borderRadius: 999,
+    backgroundColor: "#E6E8F0",
+    overflow: "hidden",
+  },
+
+  progressFill: {
+    height: "100%",
+    backgroundColor: "#FBBC04",
+  },
+
+  progressText: {
+    marginTop: 6,
+    fontSize: 11,
+    fontWeight: "800",
+    color: "#6E7385",
   },
 });

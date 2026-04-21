@@ -29,15 +29,28 @@ type MeResponse = {
     name: string;
     email: string;
     phone?: string | null;
+
     emailVerified?: boolean;
     phoneVerified?: boolean;
+
     avatar?: string | null;
     picture?: string | null;
+
     role?: string;
     points?: number;
     level?: number;
-    hasPassword?: boolean;
+
     authProvider?: string;
+
+    clientCategory: string;
+    totalRentalsCount: number;
+
+    categoryProgress: {
+        current: number;
+        total: number;
+        remaining: number;
+        nextCategory: string | null;
+    };
 };
 
 function formatPhone(value: string) {
@@ -91,6 +104,11 @@ export default function AccountScreen() {
     const [alertTitle, setAlertTitle] = useState("");
     const [alertMessage, setAlertMessage] = useState("");
 
+    const [clientCategory, setClientCategory] = useState("STARTER");
+    const [nextCategory, setNextCategory] = useState<string | null>(null);
+    const [progress, setProgress] = useState(0);
+    const [rentalsCount, setRentalsCount] = useState(0);
+
     const showAlert = (type: AlertType, title: string, message: string) => {
         setAlertType(type);
         setAlertTitle(title);
@@ -115,6 +133,16 @@ export default function AccountScreen() {
             setLevel(data.level || 1);
             setAuthProvider(data.authProvider || "LOCAL");
             setRole(data.role || "USER");
+            setClientCategory(data.clientCategory || "STARTER");
+            setNextCategory(data.categoryProgress?.nextCategory || null);
+
+            setProgress(
+                data.categoryProgress
+                    ? data.categoryProgress.current / data.categoryProgress.total
+                    : 0
+            );
+
+            setRentalsCount(data.totalRentalsCount || 0);
         } catch (error: any) {
             showAlert(
                 "error",
@@ -234,6 +262,11 @@ export default function AccountScreen() {
                                 points={points}
                                 level={level}
                                 levelLabel={getLevelLabel(level)}
+
+                                clientCategory={clientCategory}
+                                nextCategory={nextCategory}
+                                progress={progress}
+                                rentalsCount={rentalsCount}
                             />
 
                             <Text style={styles.sectionTitle}>Status da conta</Text>
