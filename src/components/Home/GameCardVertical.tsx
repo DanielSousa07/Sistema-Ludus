@@ -3,7 +3,7 @@ import { useRouter } from "expo-router";
 import { Image, Pressable, StyleSheet, Text, View } from "react-native";
 
 interface GameCardVerticalProps {
-  id: string; 
+  id: string;
   title: string;
   location: string;
   rating: number;
@@ -43,8 +43,13 @@ export default function GameCardVertical({
         </Text>
 
         <View style={styles.location}>
-          <Ionicons name="location-outline" size={14} color="#777" />
-          <Text style={styles.locationText} numberOfLines={1}>
+          {
+            location === "Disponível" ? (
+              <Ionicons name="checkmark" size={17} color="#777" />
+            ) :
+              <Ionicons name="close" size={17} color="#777" />
+          }
+          <Text style={location === "Disponível" ? styles.locationText : styles.locationTextInactive} numberOfLines={1}>
             {location}
           </Text>
         </View>
@@ -97,7 +102,12 @@ const styles = StyleSheet.create({
   },
 
   locationText: {
-    color: "#777",
+    color: "#2FA84F",
+    fontSize: 14,
+    fontWeight: "700",
+  },
+  locationTextInactive: {
+    color: "#B3193A",
     fontSize: 14,
     fontWeight: "700",
   },

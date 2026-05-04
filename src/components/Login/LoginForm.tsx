@@ -187,7 +187,7 @@ export function LoginForm() {
         </Pressable>
       </View>
 
-      <Pressable>
+      <Pressable onPress={() => router.push("/forgot-password")}>
         <Text style={styles.forgot}>Esqueceu a senha?</Text>
       </Pressable>
 

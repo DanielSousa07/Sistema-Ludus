@@ -51,7 +51,6 @@ export function HomeCard({
         ))
       )}
 
-      {/* Espaço branco para não aparecer o fundo azul antes do footer */}
       <View style={{ height: footerSpace + 20 }} />
     </View>
   );
