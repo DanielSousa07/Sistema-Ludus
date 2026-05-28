@@ -4,7 +4,9 @@ import { styles } from "./styles";
 export function RegisterHeader() {
   return (
     <>
-      <View style={{ flexDirection: "row", alignItems: "center", marginBottom: 8 }}>
+      <View
+        style={{ flexDirection: "row", alignItems: "center", marginBottom: 8 }}
+      >
         <Image
           source={require("../../../assets/logo-dice.png")}
           style={{ width: 63, height: 63, marginRight: 10 }}

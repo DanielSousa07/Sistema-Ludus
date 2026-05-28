@@ -1,9 +1,19 @@
 import BackButton from "@/src/components/common/BackButton";
 import LoginBackground from "@/src/components/Login/LoginBackground";
-import RegisterForm from "@/src/components/Register/RegisterForm";
 import { StyleSheet, View } from "react-native";
 
+const IFMA_MODE = process.env.EXPO_PUBLIC_IFMA_MODE === "true";
+
+const RegisterForm = IFMA_MODE
+  ? require("@/src/components/Register/RegisterFormIFMA").default
+  : require("@/src/components/Register/RegisterForm").default;
+
 function Register() {
+  const IFMA_MODE = process.env.EXPO_PUBLIC_IFMA_MODE === "true";
+
+  const RegisterForm = IFMA_MODE
+    ? require("@/src/components/Register/RegisterFormIFMA").default
+    : require("@/src/components/Register/RegisterForm").default;
   return (
     <View style={styles.container}>
       <LoginBackground />
@@ -19,4 +29,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default Register
+export default Register;

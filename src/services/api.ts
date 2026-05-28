@@ -1,9 +1,10 @@
 import axios from "axios";
 import * as SecureStore from "expo-secure-store";
+import { showLudusAlert } from "./alert.service"; // Importando a nossa ponte de alerta
 import { goToVerify } from "./navigation";
 
 export const api = axios.create({
-  baseURL: "https://backend-ludus-production-d1f7.up.railway.app",
+  baseURL: "http://192.168.18.168:3000",
 });
 
 api.interceptors.request.use(async (config) => {
@@ -18,6 +19,25 @@ api.interceptors.response.use(
     const status = error?.response?.status;
     const code = error?.response?.data?.code;
 
+    // 1. TRATAMENTO DE BLOQUEIO ADMINISTRATIVO
+    if (status === 403 && code === "ACCOUNT_BLOCKED") {
+      await SecureStore.deleteItemAsync("token");
+      await SecureStore.deleteItemAsync("user");
+
+      // Usando o LudusAlert no lugar do Alert nativo
+      showLudusAlert({
+        type: "error",
+        title: "Acesso Bloqueado",
+        message:
+          "Sua conta foi suspensa por um administrador. Contate o suporte para mais informações.",
+      });
+
+      // Ao deletar o token, o AuthContext.user deve virar null
+      // e o app deve redirecionar para o Login automaticamente.
+      return Promise.reject(error);
+    }
+
+    // 2. Lógica de Verificação (Email/Phone)
     const url = (error?.config?.url || "").toString();
     const isVerifyRelated =
       url.includes("/auth/verify-email") ||
@@ -30,16 +50,24 @@ api.interceptors.response.use(
       const user = storedUser ? JSON.parse(storedUser) : null;
 
       if (code === "EMAIL_NOT_VERIFIED") {
-        
+        showLudusAlert({
+          type: "info",
+          title: "Verificação de E-mail",
+          message:
+            "Por favor, verifique seu e-mail para continuar utilizando o app.",
+        });
         goToVerify({ email: user?.email });
-      }
-
-      if (code === "PHONE_NOT_VERIFIED") {
-      
+      } else if (code === "PHONE_NOT_VERIFIED") {
+        showLudusAlert({
+          type: "info",
+          title: "Verificação de Telefone",
+          message:
+            "Por favor, verifique seu telefone para continuar utilizando o app.",
+        });
         goToVerify({ phone: user?.phone });
       }
     }
 
     return Promise.reject(error);
-  }
+  },
 );

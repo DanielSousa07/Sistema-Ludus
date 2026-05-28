@@ -20,7 +20,7 @@ export default function ManageScreen() {
         <Text style={styles.title}>Painel Administrativo</Text>
         <Text style={styles.subtitle}>
           Gerencie o catálogo do Ludus{" "}
-          <Pressable onPress={logout}>
+          <Pressable onPress={() => router.push("/suap-verify")}>
             <Text>Sair</Text>
           </Pressable>
         </Text>
@@ -30,7 +30,9 @@ export default function ManageScreen() {
           onEditGamesPress={() => router.push("/admin/edit-games")}
           onManageCopiesPress={() => router.push("/admin/copies")}
           onManageRentalsPress={() => router.push("/admin/rentals")}
-          onManageCategoriesPress={() => router.push("/admin/client-categories")}
+          onManageCategoriesPress={() =>
+            router.push("/admin/client-categories")
+          }
         />
 
         <ManageSearchModal

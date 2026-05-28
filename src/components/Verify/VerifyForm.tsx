@@ -31,7 +31,7 @@ export default function VerifyForm() {
 
   const email = useMemo(
     () => (emailParam || "").trim().toLowerCase(),
-    [emailParam]
+    [emailParam],
   );
 
   const [alertVisible, setAlertVisible] = useState(false);
@@ -65,7 +65,7 @@ export default function VerifyForm() {
       showAlert(
         "error",
         "Erro",
-        "E-mail não encontrado. Volte e tente novamente."
+        "E-mail não encontrado. Volte e tente novamente.",
       );
     }
   }, [email]);
@@ -206,7 +206,7 @@ export default function VerifyForm() {
       showAlert(
         "info",
         "Código incompleto",
-        "Por favor, preencha os 6 dígitos."
+        "Por favor, preencha os 6 dígitos.",
       );
       return;
     }
@@ -215,7 +215,7 @@ export default function VerifyForm() {
       showAlert(
         "error",
         "Erro",
-        "E-mail não encontrado. Volte e tente novamente."
+        "E-mail não encontrado. Volte e tente novamente.",
       );
       return;
     }
@@ -231,13 +231,13 @@ export default function VerifyForm() {
 
       if (token && user) {
         await signInWithToken(token, user);
-        router.replace("/home");
+        router.replace("/suap-verify");
         return;
       }
 
       showAlert("success", "Verificado 🎉", "Conta criada com sucesso!");
       setTimeout(() => {
-        router.replace("/home");
+        router.replace("/suap-verify");
       }, 700);
     } catch (error: any) {
       const message =
@@ -255,7 +255,7 @@ export default function VerifyForm() {
       showAlert(
         "error",
         "Erro",
-        "E-mail não encontrado. Volte e tente novamente."
+        "E-mail não encontrado. Volte e tente novamente.",
       );
       return;
     }
@@ -267,7 +267,7 @@ export default function VerifyForm() {
       showAlert(
         "success",
         "E-mail enviado 📩",
-        "Novo código enviado para seu e-mail!"
+        "Novo código enviado para seu e-mail!",
       );
 
       setCountdown(30);
@@ -342,7 +342,10 @@ export default function VerifyForm() {
 
               <Text style={styles.resend}>Não recebeu o e-mail?</Text>
 
-              <Pressable onPress={handleResend} disabled={isCounting || resendLoading}>
+              <Pressable
+                onPress={handleResend}
+                disabled={isCounting || resendLoading}
+              >
                 <Text
                   style={[
                     styles.resendBold,
@@ -352,8 +355,8 @@ export default function VerifyForm() {
                   {isCounting
                     ? `Reenviar em 00:${countdown.toString().padStart(2, "0")}`
                     : resendLoading
-                    ? "Enviando..."
-                    : "REENVIAR E-MAIL"}
+                      ? "Enviando..."
+                      : "REENVIAR E-MAIL"}
                 </Text>
               </Pressable>
 
