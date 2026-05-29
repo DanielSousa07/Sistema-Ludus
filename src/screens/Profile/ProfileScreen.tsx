@@ -16,6 +16,7 @@ import {
   View,
 } from "react-native";
 import HomeBackground from "../../components/Home/HomeBackground";
+import { RegistrationBanner } from "./RegistrationBanner";
 
 export default function ProfileScreen() {
   const router = useRouter();
@@ -61,7 +62,7 @@ export default function ProfileScreen() {
     } catch (error: any) {
       Alert.alert(
         "Erro",
-        error?.response?.data?.error || "Não foi possível atualizar a foto."
+        error?.response?.data?.error || "Não foi possível atualizar a foto.",
       );
     } finally {
       setUploadingAvatar(false);
@@ -76,7 +77,7 @@ export default function ProfileScreen() {
     if (!permission.granted) {
       Alert.alert(
         "Permissão necessária",
-        "Precisamos da sua permissão para acessar a galeria."
+        "Precisamos da sua permissão para acessar a galeria.",
       );
       return;
     }
@@ -105,7 +106,7 @@ export default function ProfileScreen() {
     if (!permission.granted) {
       Alert.alert(
         "Permissão necessária",
-        "Precisamos da sua permissão para acessar a câmera."
+        "Precisamos da sua permissão para acessar a câmera.",
       );
       return;
     }
@@ -137,7 +138,7 @@ export default function ProfileScreen() {
     } catch (error: any) {
       Alert.alert(
         "Erro",
-        error?.response?.data?.error || "Não foi possível remover a foto."
+        error?.response?.data?.error || "Não foi possível remover a foto.",
       );
     } finally {
       setUploadingAvatar(false);
@@ -161,6 +162,11 @@ export default function ProfileScreen() {
               <Text style={styles.uploadingText}>Atualizando foto...</Text>
             </View>
           ) : null}
+
+          {/* O BANNER ENTRA AQUI, BEM VISÍVEL ASSIM QUE A TELA CARREGA */}
+          <View style={{ marginHorizontal: -20, marginBottom: 16 }}>
+            <RegistrationBanner />
+          </View>
 
           <Text style={styles.sectionTitle}>Configurações</Text>
           <View style={styles.sectionLine} />

@@ -36,6 +36,9 @@ export type AuthUser = {
   isAcademicVerified?: boolean;
   academicVerifiedAt?: string | null;
   matricula?: string | null;
+
+  registrationStatus?: "PENDING" | "APPROVED" | "REJECTED";
+  rejectReason?: string | null;
 };
 
 type AuthResult = { success: true } | { success: false; message: string };

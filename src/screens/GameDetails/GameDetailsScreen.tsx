@@ -1,9 +1,17 @@
 import { api } from "@/src/services/api";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import {
+  ActivityIndicator,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
+} from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
+import LudusAlert from "@/src/components/common/LudusAlert/LudusAlert";
 import { BottomBar } from "@/src/components/GameDetails/BottomBar";
 import { GameComponents } from "@/src/components/GameDetails/GameComponents";
 import { GameDescription } from "@/src/components/GameDetails/GameDescription";
@@ -13,8 +21,11 @@ import { GameHowToPlay } from "@/src/components/GameDetails/GameHowToPlay";
 import { GameMeta } from "@/src/components/GameDetails/GameMeta";
 import { RateModal } from "@/src/components/GameDetails/RateModal";
 import { RentModal } from "@/src/components/GameDetails/RentModal";
+import {
+  BlockType,
+  VerificationBlockModal,
+} from "@/src/components/GameDetails/VerificationBlockModal";
 import { TermsRentModal } from "@/src/components/RentTerms/TermsRentModal";
-import LudusAlert from "@/src/components/common/LudusAlert/LudusAlert";
 import { useAuth } from "@/src/contexts/AuthContext";
 import { Ionicons } from "@expo/vector-icons";
 
@@ -65,8 +76,12 @@ export default function GameDetailsScreen() {
   const params = useLocalSearchParams();
   const id = useMemo(
     () => (Array.isArray(params.id) ? params.id[0] : String(params.id)),
-    [params.id]
+    [params.id],
   );
+
+  // Estados do Modal de Bloqueio
+  const [blockModalVisible, setBlockModalVisible] = useState(false);
+  const [blockType, setBlockType] = useState<BlockType>(null);
 
   const [isFavorite, setIsFavorite] = useState(false);
   const [favSaving, setFavSaving] = useState(false);
@@ -90,21 +105,28 @@ export default function GameDetailsScreen() {
 
   const [termsOpen, setTermsOpen] = useState(false);
   const [termsLoading, setTermsLoading] = useState(false);
-  const pendingRentRef = useRef<null | { type: "original" } | { type: "copy"; copyId: string }>(null);
+  const pendingRentRef = useRef<
+    null | { type: "original" } | { type: "copy"; copyId: string }
+  >(null);
 
   const [alertVisible, setAlertVisible] = useState(false);
   const [alertType, setAlertType] = useState<AlertType>("info");
   const [alertTitle, setAlertTitle] = useState("");
   const [alertMessage, setAlertMessage] = useState("");
 
-  const [tab, setTab] = useState<"description" | "components" | "howtoplay">("description");
+  const [tab, setTab] = useState<"description" | "components" | "howtoplay">(
+    "description",
+  );
 
-  const showAlert = useCallback((type: AlertType, title: string, message: string) => {
-    setAlertType(type);
-    setAlertTitle(title);
-    setAlertMessage(message);
-    setAlertVisible(true);
-  }, []);
+  const showAlert = useCallback(
+    (type: AlertType, title: string, message: string) => {
+      setAlertType(type);
+      setAlertTitle(title);
+      setAlertMessage(message);
+      setAlertVisible(true);
+    },
+    [],
+  );
 
   const hasHowToPlay = !!(game?.howToPlayUrl && game.howToPlayUrl.trim());
 
@@ -160,7 +182,11 @@ export default function GameDetailsScreen() {
     if (!game) return;
 
     if (isAdmin) {
-      showAlert("info", "Ação bloqueada", "Conta ADMIN não pode avaliar jogos.");
+      showAlert(
+        "info",
+        "Ação bloqueada",
+        "Conta ADMIN não pode avaliar jogos.",
+      );
       return;
     }
 
@@ -171,27 +197,39 @@ export default function GameDetailsScreen() {
       setGame((prev) =>
         prev
           ? {
-            ...prev,
-            rating: res.data?.avgRating ?? prev.rating,
-            ratingsCount: res.data?.ratingsCount ?? prev.ratingsCount,
-            myRating: res.data?.myRating ?? value,
-          }
-          : prev
+              ...prev,
+              rating: res.data?.avgRating ?? prev.rating,
+              ratingsCount: res.data?.ratingsCount ?? prev.ratingsCount,
+              myRating: res.data?.myRating ?? value,
+            }
+          : prev,
       );
 
       setRateOpen(false);
-      showAlert("success", "Avaliação salva!", "Sua avaliação foi registrada com sucesso.");
+      showAlert(
+        "success",
+        "Avaliação salva!",
+        "Sua avaliação foi registrada com sucesso.",
+      );
     } catch (e: any) {
       const code = e?.response?.data?.code;
       const msg = e?.response?.data?.error;
 
       if (code === "CANNOT_RATE") {
         setCanRate(false);
-        showAlert("info", "Avaliação bloqueada", "Você só pode avaliar este jogo após devolver.");
+        showAlert(
+          "info",
+          "Avaliação bloqueada",
+          "Você só pode avaliar este jogo após devolver.",
+        );
         return;
       }
 
-      showAlert("error", "Erro", msg || "Não foi possível salvar sua avaliação. Tente novamente.");
+      showAlert(
+        "error",
+        "Erro",
+        msg || "Não foi possível salvar sua avaliação. Tente novamente.",
+      );
     } finally {
       setSavingRate(false);
     }
@@ -214,7 +252,11 @@ export default function GameDetailsScreen() {
       if (!watching) {
         await api.post(`/games/${game.id}/watch`);
         setWatching(true);
-        showAlert("success", "Aviso ativado", "Vamos te avisar quando o jogo voltar a ficar disponível.");
+        showAlert(
+          "success",
+          "Aviso ativado",
+          "Vamos te avisar quando o jogo voltar a ficar disponível.",
+        );
       } else {
         await api.delete(`/games/${game.id}/watch`);
         setWatching(false);
@@ -241,7 +283,11 @@ export default function GameDetailsScreen() {
 
     try {
       await api.post("/rentals", { gameId: game.id });
-      showAlert("success", "Pedido de aluguel solocitado!", "Retire o seu jogo na Biblioteca IFMA - Campus Timon");
+      showAlert(
+        "success",
+        "Pedido de aluguel solocitado!",
+        "Retire o seu jogo na Biblioteca IFMA - Campus Timon",
+      );
       setRentOpen(false);
       await fetchDetails();
     } catch (e: any) {
@@ -256,26 +302,46 @@ export default function GameDetailsScreen() {
 
       if (code === "ONLY_COPIES_ALLOWED") {
         setRentOpen(true);
-        showAlert("info", "Escolha um exemplar", "Este jogo só pode ser alugado por exemplar.");
+        showAlert(
+          "info",
+          "Escolha um exemplar",
+          "Este jogo só pode ser alugado por exemplar.",
+        );
         return;
       }
 
       if (code === "GAME_UNAVAILABLE") {
-        showAlert("error", "Indisponível", "Este jogo não está disponível no momento.");
+        showAlert(
+          "error",
+          "Indisponível",
+          "Este jogo não está disponível no momento.",
+        );
         return;
       }
 
       if (code === "RENTAL_LIMIT_REACHED") {
-        showAlert("info", "Limite atingido", "Você já possui 2 aluguéis em aberto. Finalize um para alugar outro.");
+        showAlert(
+          "info",
+          "Limite atingido",
+          "Você já possui 2 aluguéis em aberto. Finalize um para alugar outro.",
+        );
         return;
       }
 
       if (code === "TIER_ACCESS_DENIED") {
-        showAlert("error", "Acesso restrito", msg || "Sua categoria de cliente não permite alugar este jogo.");
+        showAlert(
+          "error",
+          "Acesso restrito",
+          msg || "Sua categoria de cliente não permite alugar este jogo.",
+        );
         return;
       }
 
-      showAlert("error", "Erro", msg || "Não foi possível alugar. Tente novamente.");
+      showAlert(
+        "error",
+        "Erro",
+        msg || "Não foi possível alugar. Tente novamente.",
+      );
     }
   }, [game, fetchDetails, showAlert]);
 
@@ -285,7 +351,11 @@ export default function GameDetailsScreen() {
 
       try {
         await api.post("/rentals", { gameId: game.id, copyId });
-        showAlert("success", "Exemplar alugado!", "Retire o seu jogo na Biblioteca IFMA - Campus Timon");
+        showAlert(
+          "success",
+          "Exemplar alugado!",
+          "Retire o seu jogo na Biblioteca IFMA - Campus Timon",
+        );
         setRentOpen(false);
         await fetchDetails();
       } catch (e: any) {
@@ -299,24 +369,40 @@ export default function GameDetailsScreen() {
         const msg = e?.response?.data?.error;
 
         if (code === "RENTAL_LIMIT_REACHED") {
-          showAlert("info", "Limite atingido", "Você já possui 2 aluguéis em aberto. Finalize um para alugar outro.");
+          showAlert(
+            "info",
+            "Limite atingido",
+            "Você já possui 2 aluguéis em aberto. Finalize um para alugar outro.",
+          );
           return;
         }
 
         if (code === "COPY_UNAVAILABLE") {
-          showAlert("error", "Exemplar indisponível", "Esse exemplar acabou de ficar indisponível. Atualize e tente outro.");
+          showAlert(
+            "error",
+            "Exemplar indisponível",
+            "Esse exemplar acabou de ficar indisponível. Atualize e tente outro.",
+          );
           return;
         }
 
         if (code === "TIER_ACCESS_DENIED") {
-          showAlert("error", "Acesso restrito", msg || "Sua categoria de cliente não permite alugar este jogo.");
+          showAlert(
+            "error",
+            "Acesso restrito",
+            msg || "Sua categoria de cliente não permite alugar este jogo.",
+          );
           return;
         }
 
-        showAlert("error", "Erro", msg || "Não foi possível alugar o exemplar.");
+        showAlert(
+          "error",
+          "Erro",
+          msg || "Não foi possível alugar o exemplar.",
+        );
       }
     },
-    [game, fetchDetails, showAlert]
+    [game, fetchDetails, showAlert],
   );
 
   const acceptTermsAndContinue = useCallback(async () => {
@@ -333,7 +419,11 @@ export default function GameDetailsScreen() {
       if (pending.type === "original") await rentOriginalNow();
       else await rentCopyNow(pending.copyId);
     } catch {
-      showAlert("error", "Erro", "Não foi possível aceitar os termos. Tente novamente.");
+      showAlert(
+        "error",
+        "Erro",
+        "Não foi possível aceitar os termos. Tente novamente.",
+      );
     } finally {
       setTermsLoading(false);
     }
@@ -355,7 +445,11 @@ export default function GameDetailsScreen() {
 
       setRentOpen(true);
     } catch {
-      showAlert("error", "Erro", "Não foi possível carregar os exemplares disponíveis.");
+      showAlert(
+        "error",
+        "Erro",
+        "Não foi possível carregar os exemplares disponíveis.",
+      );
     } finally {
       setRentLoading(false);
     }
@@ -408,13 +502,18 @@ export default function GameDetailsScreen() {
       ) : errMsg ? (
         <View style={styles.center}>
           <Text style={{ color: "#666", fontWeight: "700" }}>{errMsg}</Text>
-          <Text onPress={fetchDetails} style={{ marginTop: 10, color: "#0A1F5C", fontWeight: "900" }}>
+          <Text
+            onPress={fetchDetails}
+            style={{ marginTop: 10, color: "#0A1F5C", fontWeight: "900" }}
+          >
             Tentar novamente
           </Text>
         </View>
       ) : !game ? (
         <View style={styles.center}>
-          <Text style={{ color: "#666", fontWeight: "700" }}>Jogo não encontrado.</Text>
+          <Text style={{ color: "#666", fontWeight: "700" }}>
+            Jogo não encontrado.
+          </Text>
         </View>
       ) : (
         <>
@@ -424,7 +523,11 @@ export default function GameDetailsScreen() {
             isFavorite={isFavorite}
             onToggleFavorite={() => {
               if (isAdmin) {
-                showAlert("info", "Ação bloqueada", "Administrador não pode favoritar jogos");
+                showAlert(
+                  "info",
+                  "Ação bloqueada",
+                  "Administrador não pode favoritar jogos",
+                );
                 return;
               }
               handleToggleFavorite();
@@ -442,11 +545,19 @@ export default function GameDetailsScreen() {
                 ratingsCount={game.ratingsCount}
                 onPressRate={() => {
                   if (isAdmin) {
-                    showAlert("info", "Ação bloqueada", "Conta ADMIN não pode avaliar jogos.");
+                    showAlert(
+                      "info",
+                      "Ação bloqueada",
+                      "Conta ADMIN não pode avaliar jogos.",
+                    );
                     return;
                   }
                   if (!canRate) {
-                    showAlert("info", "Avaliação bloqueada", "Você só pode avaliar este jogo após alugar e devolver.");
+                    showAlert(
+                      "info",
+                      "Avaliação bloqueada",
+                      "Você só pode avaliar este jogo após alugar e devolver.",
+                    );
                     return;
                   }
                   setRateOpen(true);
@@ -457,9 +568,13 @@ export default function GameDetailsScreen() {
                 tier={game.tier}
               />
 
-              <GameFactsRow players={playersText} time={timeText} age={ageText} />
+              <GameFactsRow
+                players={playersText}
+                time={timeText}
+                age={ageText}
+              />
 
-              { /*GameLocationPreview
+              {/*GameLocationPreview
                 placeName="Biblioteca, Campus Timon"
                 address="IFMA - Campus Timon"
                 latitude={-5.11152}
@@ -469,7 +584,10 @@ export default function GameDetailsScreen() {
               <View style={styles.tabs}>
                 <Pressable
                   onPress={() => setTab("description")}
-                  style={[styles.tab, tab === "description" && styles.tabYellow]}
+                  style={[
+                    styles.tab,
+                    tab === "description" && styles.tabYellow,
+                  ]}
                 >
                   <Ionicons
                     name="document-text-outline"
@@ -478,7 +596,10 @@ export default function GameDetailsScreen() {
                   />
                   <Text
                     numberOfLines={1}
-                    style={[styles.tabText, tab === "description" && styles.tabTextActive]}
+                    style={[
+                      styles.tabText,
+                      tab === "description" && styles.tabTextActive,
+                    ]}
                   >
                     Descrição
                   </Text>
@@ -495,7 +616,10 @@ export default function GameDetailsScreen() {
                   />
                   <Text
                     numberOfLines={1}
-                    style={[styles.tabText, tab === "components" && styles.tabTextActive]}
+                    style={[
+                      styles.tabText,
+                      tab === "components" && styles.tabTextActive,
+                    ]}
                   >
                     Componentes
                   </Text>
@@ -513,7 +637,10 @@ export default function GameDetailsScreen() {
                     />
                     <Text
                       numberOfLines={1}
-                      style={[styles.tabText, tab === "howtoplay" && styles.tabTextActive]}
+                      style={[
+                        styles.tabText,
+                        tab === "howtoplay" && styles.tabTextActive,
+                      ]}
                     >
                       Como jogar
                     </Text>
@@ -521,7 +648,9 @@ export default function GameDetailsScreen() {
                 )}
               </View>
 
-              {tab === "description" && <GameDescription description={game.description} />}
+              {tab === "description" && (
+                <GameDescription description={game.description} />
+              )}
 
               {tab === "components" && <GameComponents gameId={game.id} />}
 
@@ -540,9 +669,41 @@ export default function GameDetailsScreen() {
             onToggleWatch={toggleWatch}
             onPressRent={() => {
               if (isAdmin) {
-                showAlert("info", "Ação bloqueada", "Administrador não pode alugar jogos.");
+                showAlert(
+                  "info",
+                  "Ação bloqueada",
+                  "Administrador não pode alugar jogos.",
+                );
                 return;
               }
+
+              const isIfmaMode = process.env.EXPO_PUBLIC_IFMA_MODE === "true";
+
+              if (isIfmaMode) {
+                if (!user?.isAcademicVerified) {
+                  setBlockType("IFMA_UNVERIFIED");
+                  setBlockModalVisible(true);
+                  return;
+                }
+              } else {
+                if (user?.registrationStatus !== "APPROVED") {
+                  const isRejected = user?.registrationStatus === "REJECTED";
+                  const hasSentDocs = !!(
+                    (user as any)?.documentFrontImage ||
+                    (user as any)?.addressProof
+                  );
+                  const isAnalysis =
+                    user?.registrationStatus === "PENDING" && hasSentDocs;
+
+                  if (isAnalysis) setBlockType("DOCS_PENDING");
+                  else if (isRejected) setBlockType("DOCS_REJECTED");
+                  else setBlockType("DOCS_UNVERIFIED");
+
+                  setBlockModalVisible(true);
+                  return;
+                }
+              }
+
               openRentFlow();
             }}
           />
@@ -594,6 +755,23 @@ export default function GameDetailsScreen() {
             title={alertTitle}
             message={alertMessage}
             onClose={() => setAlertVisible(false)}
+          />
+
+          <VerificationBlockModal
+            visible={blockModalVisible}
+            type={blockType}
+            onClose={() => setBlockModalVisible(false)}
+            onAction={() => {
+              setBlockModalVisible(false);
+
+              if (blockType === "IFMA_UNVERIFIED") {
+                router.push("/suap-verify");
+              } else if (blockType === "DOCS_PENDING") {
+                // Apenas fecha o modal
+              } else {
+                router.push("/profile/documents");
+              }
+            }}
           />
         </>
       )}
