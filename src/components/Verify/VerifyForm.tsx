@@ -229,15 +229,18 @@ export default function VerifyForm() {
 
       const { token, user } = response.data;
 
+      // Verifica dinamicamente se o modo IFMA está ligado
+      const isIfmaMode = process.env.EXPO_PUBLIC_IFMA_MODE === "true";
+
       if (token && user) {
         await signInWithToken(token, user);
-        router.replace("/suap-verify");
+        router.replace(isIfmaMode ? "/suap-verify" : "/home");
         return;
       }
 
       showAlert("success", "Verificado 🎉", "Conta criada com sucesso!");
       setTimeout(() => {
-        router.replace("/suap-verify");
+        router.replace(isIfmaMode ? "/suap-verify" : "/home");
       }, 700);
     } catch (error: any) {
       const message =

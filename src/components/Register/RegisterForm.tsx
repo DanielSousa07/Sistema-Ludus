@@ -4,18 +4,21 @@ import { RegisterHeader } from "@/src/components/Register/RegisterHeader";
 import { TermsConsentSection } from "@/src/components/Register/TermsConsentSection";
 import { useAuth } from "@/src/contexts/AuthContext";
 import { api } from "@/src/services/api";
+import { isValidCPF, maskCEP, maskCPF } from "@/src/utils/validators";
 import { Ionicons } from "@expo/vector-icons";
 import { GoogleSignin } from "@react-native-google-signin/google-signin";
+import axios from "axios";
 import { useRouter } from "expo-router";
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
+  ActivityIndicator,
   KeyboardAvoidingView,
   Platform,
   Pressable,
   ScrollView,
   Text,
   TextInput,
-  View
+  View,
 } from "react-native";
 import LudusAlert from "../common/LudusAlert/LudusAlert";
 import { styles } from "./styles";
@@ -33,11 +36,7 @@ const formatBRPhone = (raw: string) => {
 
 function getPasswordStrength(password: string) {
   if (!password) {
-    return {
-      score: 0,
-      label: "",
-      color: "#D9DDE7",
-    };
+    return { score: 0, label: "", color: "#D9DDE7" };
   }
 
   let score = 0;
@@ -69,6 +68,17 @@ export default function RegisterForm() {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
+  const [cpf, setCpf] = useState("");
+
+  // Estados de Endereço
+  const [cep, setCep] = useState("");
+  const [logradouro, setLogradouro] = useState("");
+  const [numero, setNumero] = useState("");
+  const [bairro, setBairro] = useState("");
+  const [cidade, setCidade] = useState("");
+  const [uf, setUf] = useState("");
+  const [fetchingCep, setFetchingCep] = useState(false);
+
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
 
@@ -91,6 +101,7 @@ export default function RegisterForm() {
   const nameRef = useRef<TextInput | null>(null);
   const emailRef = useRef<TextInput | null>(null);
   const phoneRef = useRef<TextInput | null>(null);
+  const cpfRef = useRef<TextInput | null>(null);
   const passRef = useRef<TextInput | null>(null);
   const confirmRef = useRef<TextInput | null>(null);
 
@@ -103,7 +114,10 @@ export default function RegisterForm() {
 
   const cleanPhone = useMemo(() => phone.replace(/\D/g, ""), [phone]);
 
-  const passwordStrength = useMemo(() => getPasswordStrength(password), [password]);
+  const passwordStrength = useMemo(
+    () => getPasswordStrength(password),
+    [password],
+  );
 
   const passwordRules = useMemo(
     () => ({
@@ -112,7 +126,7 @@ export default function RegisterForm() {
       hasNumber: /\d/.test(password),
       hasSpecial: /[^A-Za-z0-9]/.test(password),
     }),
-    [password]
+    [password],
   );
 
   const passwordError =
@@ -142,6 +156,34 @@ export default function RegisterForm() {
     });
   }, []);
 
+  const handleCepChange = async (text: string) => {
+    const masked = maskCEP(text);
+    setCep(masked);
+
+    const cleanCep = masked.replace(/\D/g, "");
+    if (cleanCep.length === 8) {
+      setFetchingCep(true);
+      try {
+        const response = await axios.get(
+          `https://viacep.com.br/ws/${cleanCep}/json/`,
+        );
+        if (!response.data.erro) {
+          setLogradouro(response.data.logradouro);
+          setBairro(response.data.bairro);
+          setCidade(response.data.localidade);
+          setUf(response.data.uf);
+        } else {
+          showAlert("error", "CEP Inválido", "Não encontramos este CEP.");
+          setLogradouro("");
+        }
+      } catch (error) {
+        showAlert("error", "Erro", "Falha ao buscar o CEP.");
+      } finally {
+        setFetchingCep(false);
+      }
+    }
+  };
+
   async function handleGoogle() {
     setGoogleLoading(true);
     try {
@@ -154,7 +196,7 @@ export default function RegisterForm() {
 
       if (!idToken) {
         throw new Error(
-          "Não foi possível obter o idToken. Verifique se o webClientId está correto."
+          "Não foi possível obter o idToken. Verifique se o webClientId está correto.",
         );
       }
 
@@ -166,7 +208,11 @@ export default function RegisterForm() {
       setTimeout(() => router.replace("/home"), 1000);
     } catch (e: any) {
       console.log("Google sign-in error:", e);
-      showAlert("error", "Erro no Login", "Não foi possível conectar com o Google.");
+      showAlert(
+        "error",
+        "Erro no Login",
+        "Não foi possível conectar com o Google.",
+      );
     } finally {
       setGoogleLoading(false);
     }
@@ -176,26 +222,33 @@ export default function RegisterForm() {
     const cleanName = name.trim();
     const cleanEmail = email.trim().toLowerCase();
     const cleanPhoneDigits = cleanPhone;
+    const cleanCpf = cpf.replace(/\D/g, "");
 
-    if (!cleanName) {
+    if (!cleanName)
       return showAlert("info", "Nome obrigatório", "Digite seu nome completo.");
-    }
-
-    if (!cleanEmail) {
+    if (!cleanEmail)
       return showAlert("info", "E-mail obrigatório", "Digite seu e-mail.");
-    }
-
-    if (!isValidEmail(cleanEmail)) {
+    if (!isValidEmail(cleanEmail))
       return showAlert("info", "E-mail inválido", "Digite um e-mail válido.");
-    }
-
-    if (cleanPhoneDigits.length < 10) {
+    if (cleanPhoneDigits.length < 10)
       return showAlert(
         "info",
         "Telefone inválido",
-        "Digite um telefone válido com DDD."
+        "Digite um telefone válido com DDD.",
       );
-    }
+
+    if (!isValidCPF(cleanCpf))
+      return showAlert(
+        "info",
+        "CPF Inválido",
+        "Por favor, digite um CPF válido.",
+      );
+    if (!logradouro || !numero || !cidade)
+      return showAlert(
+        "info",
+        "Endereço Incompleto",
+        "Preencha o CEP e o número da sua residência.",
+      );
 
     if (password.length < 6) {
       setTouched((t) => ({ ...t, password: true }));
@@ -204,16 +257,22 @@ export default function RegisterForm() {
 
     if (password !== confirm) {
       setTouched((t) => ({ ...t, confirm: true }));
-      return showAlert("info", "Senhas diferentes", "A confirmação não confere.");
+      return showAlert(
+        "info",
+        "Senhas diferentes",
+        "A confirmação não confere.",
+      );
     }
 
     if (!acceptedTerms || !acceptedPrivacy) {
       return showAlert(
         "info",
         "Confirmação necessária",
-        "Você precisa aceitar os Termos de Uso e a Política de Privacidade para criar sua conta."
+        "Você precisa aceitar os Termos de Uso e a Política de Privacidade para criar sua conta.",
       );
     }
+
+    const fullAddress = `${logradouro}, ${numero} - ${bairro}, ${cidade} - ${uf}, ${cep}`;
 
     setLoading(true);
     try {
@@ -223,14 +282,16 @@ export default function RegisterForm() {
         cleanPhoneDigits,
         password,
         acceptedTerms,
-        acceptedPrivacy
+        acceptedPrivacy,
+        cleanCpf,
+        fullAddress,
       );
 
       if (result?.success) {
         showAlert(
           "success",
           "Cadastro iniciado 🎉",
-          "Enviamos um código de verificação. Confirme para concluir a criação da sua conta."
+          "Enviamos um código de verificação. Confirme para concluir a criação da sua conta.",
         );
 
         setTimeout(() => {
@@ -241,7 +302,11 @@ export default function RegisterForm() {
           });
         }, 1200);
       } else {
-        showAlert("error", "Erro", result?.message || "Erro ao iniciar cadastro.");
+        showAlert(
+          "error",
+          "Erro",
+          result?.message || "Erro ao iniciar cadastro.",
+        );
       }
     } catch {
       showAlert("error", "Erro", "Falha inesperada ao criar conta.");
@@ -257,180 +322,259 @@ export default function RegisterForm() {
       : {};
 
   return (
-  <View style={styles.container}>
-    <Wrapper style={{ flex: 1 }} {...wrapperProps}>
-      <ScrollView
-        style={{ flex: 1 }}
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={styles.scroll}
-        keyboardShouldPersistTaps="handled"
-        keyboardDismissMode="on-drag"
-      >
-        <RegisterHeader />
-
-        <Text style={styles.label}>Nome completo</Text>
-        <TextInput
-          ref={nameRef}
-          style={styles.input}
-          placeholder="Seu nome"
-          placeholderTextColor="#999"
-          value={name}
-          onChangeText={setName}
-          returnKeyType="next"
-          onSubmitEditing={() => emailRef.current?.focus()}
-        />
-
-        <Text style={styles.label}>E-mail</Text>
-        <TextInput
-          ref={emailRef}
-          style={styles.input}
-          placeholder="Seu e-mail"
-          placeholderTextColor="#999"
-          value={email}
-          onChangeText={setEmail}
-          autoCapitalize="none"
-          keyboardType="email-address"
-          autoCorrect={false}
-          returnKeyType="next"
-          onSubmitEditing={() => phoneRef.current?.focus()}
-          textContentType="emailAddress"
-        />
-
-        <Text style={styles.label}>Telefone</Text>
-        <TextInput
-          ref={phoneRef}
-          style={styles.input}
-          placeholder="(00) 00000-0000"
-          placeholderTextColor="#999"
-          value={phone}
-          onChangeText={(t) => setPhone(formatBRPhone(t))}
-          keyboardType="phone-pad"
-          returnKeyType="next"
-          onSubmitEditing={() => passRef.current?.focus()}
-          textContentType="telephoneNumber"
-        />
-
-        <Text style={styles.label}>Senha</Text>
-        <View
-          style={[
-            styles.passwordWrapper,
-            passwordError ? styles.fieldError : null,
-          ]}
+    <View style={styles.container}>
+      <Wrapper style={{ flex: 1 }} {...wrapperProps}>
+        <ScrollView
+          style={{ flex: 1 }}
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={styles.scroll}
+          keyboardShouldPersistTaps="handled"
+          keyboardDismissMode="on-drag"
         >
+          <RegisterHeader />
+
+          <Text style={styles.label}>Nome completo</Text>
           <TextInput
-            ref={passRef}
-            style={styles.inputPassword}
-            placeholder="Senha"
+            ref={nameRef}
+            style={styles.input}
+            placeholder="Seu nome"
             placeholderTextColor="#999"
-            secureTextEntry={hidePassword}
-            value={password}
-            onChangeText={setPassword}
-            onBlur={() => setTouched((t) => ({ ...t, password: true }))}
+            value={name}
+            onChangeText={setName}
             returnKeyType="next"
-            onSubmitEditing={() => confirmRef.current?.focus()}
-            textContentType="newPassword"
-            autoCapitalize="none"
-            autoCorrect={false}
+            onSubmitEditing={() => emailRef.current?.focus()}
           />
-          <Pressable onPress={() => setHidePassword((v) => !v)}>
-            <Ionicons
-              name={hidePassword ? "eye-off" : "eye"}
-              size={22}
-              color={passwordError ? "#E62325" : "#535353"}
-            />
-          </Pressable>
-        </View>
 
-        <PasswordStrengthSection
-          visible={password.length > 0}
-          strength={passwordStrength}
-          rules={passwordRules}
-        />
-
-        {passwordError ? <Text style={styles.errorText}>{passwordError}</Text> : null}
-
-        <Text style={styles.label}>Confirmar senha</Text>
-        <View
-          style={[
-            styles.passwordWrapper,
-            confirmError ? styles.fieldError : null,
-          ]}
-        >
+          <Text style={styles.label}>E-mail</Text>
           <TextInput
-            ref={confirmRef}
-            style={styles.inputPassword}
-            placeholder="Confirme a senha"
+            ref={emailRef}
+            style={styles.input}
+            placeholder="Seu e-mail"
             placeholderTextColor="#999"
-            secureTextEntry={hideConfirm}
-            value={confirm}
-            onChangeText={setConfirm}
-            onBlur={() => setTouched((t) => ({ ...t, confirm: true }))}
-            returnKeyType="done"
-            onSubmitEditing={handleRegister}
-            textContentType="newPassword"
+            value={email}
+            onChangeText={setEmail}
             autoCapitalize="none"
+            keyboardType="email-address"
             autoCorrect={false}
+            returnKeyType="next"
+            onSubmitEditing={() => phoneRef.current?.focus()}
+            textContentType="emailAddress"
           />
-          <Pressable onPress={() => setHideConfirm((v) => !v)}>
-            <Ionicons
-              name={hideConfirm ? "eye-off" : "eye"}
-              size={22}
-              color={confirmError ? "#E62325" : "#535353"}
+
+          <Text style={styles.label}>Telefone</Text>
+          <TextInput
+            ref={phoneRef}
+            style={styles.input}
+            placeholder="(00) 00000-0000"
+            placeholderTextColor="#999"
+            value={phone}
+            onChangeText={(t) => setPhone(formatBRPhone(t))}
+            keyboardType="phone-pad"
+            returnKeyType="next"
+            onSubmitEditing={() => cpfRef.current?.focus()}
+            textContentType="telephoneNumber"
+          />
+
+          <Text style={styles.label}>CPF</Text>
+          <TextInput
+            ref={cpfRef}
+            style={styles.input}
+            placeholder="000.000.000-00"
+            placeholderTextColor="#999"
+            value={cpf}
+            onChangeText={(text) => setCpf(maskCPF(text))}
+            keyboardType="numeric"
+            maxLength={14}
+            returnKeyType="next"
+          />
+
+          <Text style={styles.label}>CEP</Text>
+          <View style={[styles.passwordWrapper, { marginBottom: 20 }]}>
+            <TextInput
+              style={styles.inputPassword}
+              placeholder="00000-000"
+              placeholderTextColor="#999"
+              value={cep}
+              onChangeText={handleCepChange}
+              keyboardType="numeric"
+              maxLength={9}
+              returnKeyType="next"
             />
+            {fetchingCep && <ActivityIndicator size="small" color="#31358B" />}
+          </View>
+
+          {logradouro ? (
+            <View
+              style={{
+                backgroundColor: "#F2F4F8",
+                padding: 16,
+                borderRadius: 16,
+                marginBottom: 20,
+              }}
+            >
+              <Text
+                style={{
+                  fontSize: 13,
+                  color: "#535353",
+                  marginBottom: 12,
+                  fontWeight: "500",
+                }}
+              >
+                {logradouro}, {bairro} - {cidade}/{uf}
+              </Text>
+              <Text style={styles.label}>Número da Residência</Text>
+              <TextInput
+                style={[styles.input, { marginBottom: 0 }]}
+                placeholder="Ex: 123"
+                placeholderTextColor="#999"
+                value={numero}
+                onChangeText={setNumero}
+                keyboardType="numeric"
+                returnKeyType="next"
+                onSubmitEditing={() => passRef.current?.focus()}
+              />
+            </View>
+          ) : null}
+
+          <Text style={styles.label}>Senha</Text>
+          <View
+            style={[
+              styles.passwordWrapper,
+              passwordError ? styles.fieldError : null,
+            ]}
+          >
+            <TextInput
+              ref={passRef}
+              style={styles.inputPassword}
+              placeholder="Senha"
+              placeholderTextColor="#999"
+              secureTextEntry={hidePassword}
+              value={password}
+              onChangeText={setPassword}
+              onBlur={() => setTouched((t) => ({ ...t, password: true }))}
+              returnKeyType="next"
+              onSubmitEditing={() => confirmRef.current?.focus()}
+              textContentType="newPassword"
+              autoCapitalize="none"
+              autoCorrect={false}
+            />
+            <Pressable onPress={() => setHidePassword((v) => !v)}>
+              <Ionicons
+                name={hidePassword ? "eye-off" : "eye"}
+                size={22}
+                color={passwordError ? "#E62325" : "#535353"}
+              />
+            </Pressable>
+          </View>
+
+          <PasswordStrengthSection
+            visible={password.length > 0}
+            strength={passwordStrength}
+            rules={passwordRules}
+          />
+
+          {passwordError ? (
+            <Text style={styles.errorText}>{passwordError}</Text>
+          ) : null}
+
+          <Text style={styles.label}>Confirmar senha</Text>
+          <View
+            style={[
+              styles.passwordWrapper,
+              confirmError ? styles.fieldError : null,
+            ]}
+          >
+            <TextInput
+              ref={confirmRef}
+              style={styles.inputPassword}
+              placeholder="Confirme a senha"
+              placeholderTextColor="#999"
+              secureTextEntry={hideConfirm}
+              value={confirm}
+              onChangeText={setConfirm}
+              onBlur={() => setTouched((t) => ({ ...t, confirm: true }))}
+              returnKeyType="done"
+              onSubmitEditing={handleRegister}
+              textContentType="newPassword"
+              autoCapitalize="none"
+              autoCorrect={false}
+            />
+            <Pressable onPress={() => setHideConfirm((v) => !v)}>
+              <Ionicons
+                name={hideConfirm ? "eye-off" : "eye"}
+                size={22}
+                color={confirmError ? "#E62325" : "#535353"}
+              />
+            </Pressable>
+          </View>
+
+          {confirmError ? (
+            <Text style={styles.errorText}>{confirmError}</Text>
+          ) : null}
+
+          <TermsConsentSection
+            acceptedTerms={acceptedTerms}
+            acceptedPrivacy={acceptedPrivacy}
+            onToggleTerms={() => setAcceptedTerms((v) => !v)}
+            onTogglePrivacy={() => setAcceptedPrivacy((v) => !v)}
+          />
+
+          <Pressable
+            style={[styles.button, loading && { opacity: 0.7 }]}
+            onPress={handleRegister}
+            disabled={loading}
+          >
+            <Text style={styles.buttonText}>
+              {loading ? "Processando..." : "Criar conta"}
+            </Text>
           </Pressable>
-        </View>
 
-        {confirmError ? <Text style={styles.errorText}>{confirmError}</Text> : null}
+          <View style={styles.divider}>
+            <View style={styles.line} />
+            <Text style={styles.or}>or</Text>
+            <View style={styles.line} />
+          </View>
 
-        <TermsConsentSection
-          acceptedTerms={acceptedTerms}
-          acceptedPrivacy={acceptedPrivacy}
-          onToggleTerms={() => setAcceptedTerms((v) => !v)}
-          onTogglePrivacy={() => setAcceptedPrivacy((v) => !v)}
-        />
-
-        <Pressable
-          style={[styles.button, loading && { opacity: 0.7 }]}
-          onPress={handleRegister}
-          disabled={loading}
-        >
-          <Text style={styles.buttonText}>
-            {loading ? "Processando..." : "Criar conta"}
-          </Text>
-        </Pressable>
-
-        <View style={styles.divider}>
-          <View style={styles.line} />
-          <Text style={styles.or}>or</Text>
-          <View style={styles.line} />
-        </View>
-
-        <GoogleRegisterButton
-          loading={googleLoading}
-          disabled={googleLoading || loading}
-          onPress={handleGoogle}
-        />
-        <Text style={styles.googleTermsBottomText}>
-          Ao entrar com Google você concorda automaticamente com os 
-          <Text style={styles.checkLink} onPress={() => router.replace("/terms")}>Termos de Uso</Text> e a <Text style={styles.checkLink} onPress={() => router.replace("/privacy-policy")}>Política de Privacidade</Text>.
+          <GoogleRegisterButton
+            loading={googleLoading}
+            disabled={googleLoading || loading}
+            onPress={handleGoogle}
+          />
+          <Text style={styles.googleTermsBottomText}>
+            Ao entrar com Google você concorda automaticamente com os
+            <Text
+              style={styles.checkLink}
+              onPress={() => router.replace("/terms")}
+            >
+              {" "}
+              Termos de Uso
+            </Text>{" "}
+            e a{" "}
+            <Text
+              style={styles.checkLink}
+              onPress={() => router.replace("/privacy-policy")}
+            >
+              Política de Privacidade
+            </Text>
+            .
           </Text>
 
-        <Text style={styles.register}>
-          Já possui uma conta?{" "}
-          <Text style={styles.link} onPress={() => router.replace("/login")}>
-            Entrar
+          <Text style={styles.register}>
+            Já possui uma conta?{" "}
+            <Text style={styles.link} onPress={() => router.replace("/login")}>
+              Entrar
+            </Text>
           </Text>
-        </Text>
-      </ScrollView>
-    </Wrapper>
+        </ScrollView>
+      </Wrapper>
 
-    <LudusAlert
-      visible={alertVisible}
-      type={alertType}
-      title={alertTitle}
-      message={alertMessage}
-      onClose={() => setAlertVisible(false)}
-    />
-  </View>
-);
+      <LudusAlert
+        visible={alertVisible}
+        type={alertType}
+        title={alertTitle}
+        message={alertMessage}
+        onClose={() => setAlertVisible(false)}
+      />
+    </View>
+  );
 }

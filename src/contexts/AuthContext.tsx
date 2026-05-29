@@ -23,6 +23,8 @@ export type AuthUser = {
   name?: string;
   email: string;
   phone?: string | null;
+  cpf?: string | null; // <--- ADICIONADO AQUI
+  address?: string | null; // <--- ADICIONADO AQUI
   role?: Role;
   phoneVerified?: boolean;
   emailVerified?: boolean;
@@ -58,6 +60,8 @@ type AuthContextValue = {
     senha: string,
     acceptedTerms: boolean,
     acceptedPrivacy: boolean,
+    cpf: string, // <--- ADICIONADO AQUI
+    address: string, // <--- ADICIONADO AQUI
   ) => Promise<AuthResult>;
   logout: () => Promise<void>;
   signInWithToken: (
@@ -227,6 +231,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }
 
+  // 👇 FUNÇÃO DE REGISTRO ATUALIZADA AQUI 👇
   async function register(
     name: string,
     email: string,
@@ -234,6 +239,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     senha: string,
     acceptedTerms: boolean,
     acceptedPrivacy: boolean,
+    cpf: string,
+    address: string,
   ): Promise<AuthResult> {
     try {
       await api.post("/auth/register", {
@@ -243,6 +250,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         senha,
         acceptedTerms,
         acceptedPrivacy,
+        cpf, // Enviando CPF para o backend
+        address, // Enviando Endereço para o backend
       });
 
       return { success: true };
