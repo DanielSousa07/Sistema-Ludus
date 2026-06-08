@@ -1,6 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
 import * as ImagePicker from "expo-image-picker";
-import { Image, Pressable, StyleSheet, Text, View } from "react-native";
+import { Alert, Image, Pressable, StyleSheet, Text, View } from "react-native";
 
 type Props = {
   label: string;
@@ -15,6 +15,24 @@ export function DocumentPicker({
   imageUri,
   onImageSelected,
 }: Props) {
+  const takePhoto = async () => {
+    const permissionResult = await ImagePicker.requestCameraPermissionsAsync();
+    if (permissionResult.granted === false) {
+      alert("Precisamos de permissão para acessar sua câmera.");
+      return;
+    }
+
+    const result = await ImagePicker.launchCameraAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsEditing: true,
+      quality: 0.7,
+    });
+
+    if (!result.canceled && result.assets[0].uri) {
+      onImageSelected(result.assets[0].uri);
+    }
+  };
+
   const pickImage = async () => {
     const permissionResult =
       await ImagePicker.requestMediaLibraryPermissionsAsync();
@@ -34,13 +52,26 @@ export function DocumentPicker({
     }
   };
 
+  const handlePress = () => {
+    Alert.alert(
+      "Adicionar Imagem",
+      "Escolha como deseja enviar a foto",
+      [
+        { text: "Tirar Foto (Câmera)", onPress: takePhoto },
+        { text: "Escolher da Galeria", onPress: pickImage },
+        { text: "Cancelar", style: "cancel" },
+      ],
+      { cancelable: true },
+    );
+  };
+
   return (
     <View style={styles.container}>
       <Text style={styles.label}>{label}</Text>
       <Text style={styles.description}>{description}</Text>
 
       <Pressable
-        onPress={pickImage}
+        onPress={handlePress}
         style={[styles.box, imageUri ? styles.boxFilled : null]}
       >
         {imageUri ? (
@@ -54,13 +85,9 @@ export function DocumentPicker({
         ) : (
           <>
             <View style={styles.iconCircle}>
-              <Ionicons
-                name="document-attach-outline"
-                size={28}
-                color="#04096E"
-              />
+              <Ionicons name="camera-outline" size={28} color="#04096E" />
             </View>
-            <Text style={styles.uploadText}>Toque para selecionar</Text>
+            <Text style={styles.uploadText}>Toque para fotografar</Text>
             <Text style={styles.uploadSubtext}>JPG ou PNG (Máx. 5MB)</Text>
           </>
         )}
@@ -123,7 +150,7 @@ const styles = StyleSheet.create({
   },
   preview: {
     width: "100%",
-    height: 180,
+    height: 220, // Aumentado um pouco para selfies ficarem melhores
     resizeMode: "cover",
   },
   changeOverlay: {

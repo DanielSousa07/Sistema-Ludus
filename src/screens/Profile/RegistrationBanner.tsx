@@ -1,17 +1,21 @@
 import { Ionicons } from "@expo/vector-icons";
-import { useRouter } from "expo-router";
+import { useFocusEffect, useRouter } from "expo-router";
+import { useCallback } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { useAuth } from "../../contexts/AuthContext";
 
 export function RegistrationBanner() {
   const router = useRouter();
-  const { user } = useAuth();
+  const { user, refreshUser } = useAuth();
+
+  useFocusEffect(
+    useCallback(() => {
+      refreshUser();
+    }, []),
+  );
 
   const isIfmaMode = process.env.EXPO_PUBLIC_IFMA_MODE === "true";
 
-  // ==========================================
-  // LÓGICA MODO IFMA (SUAP)
-  // ==========================================
   if (isIfmaMode) {
     if (user?.isAcademicVerified) return null;
 
@@ -34,21 +38,19 @@ export function RegistrationBanner() {
     );
   }
 
-  // ==========================================
-  // LÓGICA MODO PADRÃO (SaaS / DOCUMENTOS)
-  // ==========================================
-
-  // 1. Aprovado: some da tela
   if (user?.registrationStatus === "APPROVED") return null;
 
   const isRejected = user?.registrationStatus === "REJECTED";
 
-  // Verifica se o usuário já tem alguma foto salva no banco
-  const hasSentDocs = !!(user as any)?.documentFrontImage;
+  const hasAllDocs = Boolean(
+    user?.documentFrontImage &&
+    user?.documentBackImage &&
+    user?.addressProof &&
+    user?.selfieWithId,
+  );
 
-  const isAnalysis = user?.registrationStatus === "PENDING" && hasSentDocs;
+  const isAnalysis = user?.registrationStatus === "PENDING" && hasAllDocs;
 
-  // 2. Em Análise: Banner Azul (Informativo, sem clique)
   if (isAnalysis) {
     return (
       <View style={styles.containerInfo}>
@@ -66,7 +68,6 @@ export function RegistrationBanner() {
     );
   }
 
-  // 3. Rejeitado: Banner Vermelho (Clicável para reenviar)
   if (isRejected) {
     return (
       <Pressable
@@ -87,7 +88,6 @@ export function RegistrationBanner() {
     );
   }
 
-  // 4. Pendente (nunca enviou): Banner Amarelo (Clicável)
   return (
     <Pressable
       style={styles.containerWarning}
@@ -113,7 +113,6 @@ const styles = StyleSheet.create({
     paddingRight: 8,
   },
 
-  // ESTILOS: AMARELO (Avisos e Ações Pendentes)
   containerWarning: {
     flexDirection: "row",
     alignItems: "center",
@@ -122,9 +121,9 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderRadius: 16,
     padding: 16,
-    marginHorizontal: 20, // <- Adicionado
-    marginTop: 16, // <- Adicionado
-    marginBottom: 8, // <- Adicionado
+    marginHorizontal: 20,
+    marginTop: 16,
+    marginBottom: 8,
   },
   iconWrapWarning: {
     backgroundColor: "#FEF08A",
@@ -144,7 +143,6 @@ const styles = StyleSheet.create({
     lineHeight: 18,
   },
 
-  // ESTILOS: VERMELHO (Rejeição)
   containerError: {
     flexDirection: "row",
     alignItems: "center",
@@ -153,9 +151,9 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderRadius: 16,
     padding: 16,
-    marginHorizontal: 20, // <- Adicionado
-    marginTop: 16, // <- Adicionado
-    marginBottom: 8, // <- Adicionado
+    marginHorizontal: 20,
+    marginTop: 16,
+    marginBottom: 8,
   },
   iconWrapError: {
     backgroundColor: "#FEE2E2",
@@ -175,7 +173,6 @@ const styles = StyleSheet.create({
     lineHeight: 18,
   },
 
-  // ESTILOS: AZUL (Em Análise)
   containerInfo: {
     flexDirection: "row",
     alignItems: "center",
@@ -184,9 +181,9 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderRadius: 16,
     padding: 16,
-    marginHorizontal: 20, // <- Adicionado
-    marginTop: 16, // <- Adicionado
-    marginBottom: 8, // <- Adicionado
+    marginHorizontal: 20,
+    marginTop: 16,
+    marginBottom: 8,
   },
   iconWrapInfo: {
     backgroundColor: "#DBEAFE",

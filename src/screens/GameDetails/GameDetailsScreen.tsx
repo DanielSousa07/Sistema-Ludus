@@ -1,5 +1,5 @@
 import { api } from "@/src/services/api";
-import { useLocalSearchParams, useRouter } from "expo-router";
+import { useFocusEffect, useLocalSearchParams, useRouter } from "expo-router"; // 👇 useFocusEffect adicionado
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   ActivityIndicator,
@@ -70,8 +70,16 @@ type AlertType = "error" | "success" | "info";
 
 export default function GameDetailsScreen() {
   const router = useRouter();
-  const { user } = useAuth();
+  const { user, refreshUser } = useAuth(); // 👇 refreshUser extraído aqui
   const isAdmin = user?.role === "ADMIN";
+
+  // 👇 ATUALIZAÇÃO SILENCIOSA 👇
+  // Sempre que o utilizador abrir a tela deste jogo, verificamos o status real dele no servidor.
+  useFocusEffect(
+    useCallback(() => {
+      refreshUser();
+    }, []),
+  );
 
   const params = useLocalSearchParams();
   const id = useMemo(
@@ -574,13 +582,6 @@ export default function GameDetailsScreen() {
                 age={ageText}
               />
 
-              {/*GameLocationPreview
-                placeName="Biblioteca, Campus Timon"
-                address="IFMA - Campus Timon"
-                latitude={-5.11152}
-                longitude={-42.85378}
-              />
-*/}
               <View style={styles.tabs}>
                 <Pressable
                   onPress={() => setTab("description")}
@@ -688,10 +689,15 @@ export default function GameDetailsScreen() {
               } else {
                 if (user?.registrationStatus !== "APPROVED") {
                   const isRejected = user?.registrationStatus === "REJECTED";
-                  const hasSentDocs = !!(
-                    (user as any)?.documentFrontImage ||
-                    (user as any)?.addressProof
+
+                  // 👇 VALIDAÇÃO ATUALIZADA PARA EXIGIR AS 4 FOTOS 👇
+                  const hasSentDocs = Boolean(
+                    (user as any)?.documentFrontImage &&
+                    (user as any)?.documentBackImage &&
+                    (user as any)?.addressProof &&
+                    (user as any)?.selfieWithId,
                   );
+
                   const isAnalysis =
                     user?.registrationStatus === "PENDING" && hasSentDocs;
 

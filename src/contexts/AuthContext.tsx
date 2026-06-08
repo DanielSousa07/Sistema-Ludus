@@ -23,8 +23,8 @@ export type AuthUser = {
   name?: string;
   email: string;
   phone?: string | null;
-  cpf?: string | null; // <--- ADICIONADO AQUI
-  address?: string | null; // <--- ADICIONADO AQUI
+  cpf?: string | null;
+  address?: string | null;
   role?: Role;
   phoneVerified?: boolean;
   emailVerified?: boolean;
@@ -38,6 +38,12 @@ export type AuthUser = {
   isAcademicVerified?: boolean;
   academicVerifiedAt?: string | null;
   matricula?: string | null;
+
+  // Documentos para modo SaaS tradicional
+  documentFrontImage?: string | null;
+  documentBackImage?: string | null;
+  addressProof?: string | null;
+  selfieWithId?: string | null;
 
   registrationStatus?: "PENDING" | "APPROVED" | "REJECTED";
   rejectReason?: string | null;
@@ -60,8 +66,8 @@ type AuthContextValue = {
     senha: string,
     acceptedTerms: boolean,
     acceptedPrivacy: boolean,
-    cpf: string, // <--- ADICIONADO AQUI
-    address: string, // <--- ADICIONADO AQUI
+    cpf: string,
+    address: string,
   ) => Promise<AuthResult>;
   logout: () => Promise<void>;
   signInWithToken: (
@@ -80,7 +86,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<AuthUser | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  // No AuthContext.tsx, dentro do useEffect de loadStorageData
   useEffect(() => {
     async function loadStorageData() {
       try {
@@ -91,13 +96,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           api.defaults.headers.common["Authorization"] =
             `Bearer ${storedToken}`;
 
-          // Verificação rápida: se o token for rejeitado, limpamos tudo
+          setUser(JSON.parse(storedUser));
+
           try {
-            await api.get("/auth/me"); // Adicione essa rota no seu back ou use uma existente
-            setUser(JSON.parse(storedUser));
+            // 👇 ALTERADO DE "/auth/me" PARA "/users/me" 👇
+            await api.get("/users/me");
           } catch (err: any) {
-            if (err.response?.status === 403) {
-              await logout(); // Se o backend barrou, deslogamos
+            const status = err.response?.status;
+            if (status === 401 || status === 403) {
+              await logout();
             }
           }
         }
@@ -118,25 +125,31 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   // ── Atualiza o status acadêmico consultando o backend ──────────────────────
   // Chamada pelo SuapVerifyScreen após verificação bem-sucedida,
   // para refletir isAcademicVerified=true no estado local.
+  // ── Atualiza o usuário por completo (Status, Documentos, etc) ──────────────
+  // ── Atualiza o status do usuário de forma dinâmica (IFMA ou Comercial) ───────
   const refreshUser = useCallback(async () => {
-    if (!IFMA_MODE) return;
-
     try {
-      const res = await api.get("/auth/ifma/status");
+      if (IFMA_MODE) {
+        const res = await api.get("/auth/ifma/status");
+        // ... lógica do IFMA
+      } else {
+        // 👇 ALTERADO DE "/auth/me" PARA "/users/me" 👇
+        const res = await api.get("/users/me");
 
-      setUser((prev) => {
-        if (!prev) return prev;
-        const next: AuthUser = {
-          ...prev,
-          isAcademicVerified: res.data.isAcademicVerified,
-          academicVerifiedAt: res.data.academicVerifiedAt ?? null,
-          matricula: res.data.matricula ?? null,
-        };
-        SecureStore.setItemAsync("user", JSON.stringify(next)).catch(() => {});
-        return next;
-      });
+        setUser((prev) => {
+          if (!prev) return prev;
+          const next: AuthUser = {
+            ...prev,
+            ...res.data,
+          };
+          SecureStore.setItemAsync("user", JSON.stringify(next)).catch(
+            () => {},
+          );
+          return next;
+        });
+      }
     } catch (e) {
-      console.log("[IFMA] Erro ao atualizar status acadêmico:", e);
+      console.log("Erro ao recarregar dados do usuário:", e);
     }
   }, []);
 

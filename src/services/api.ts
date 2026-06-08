@@ -4,7 +4,7 @@ import { showLudusAlert } from "./alert.service"; // Importando a nossa ponte de
 import { goToVerify } from "./navigation";
 
 export const api = axios.create({
-  baseURL: "http://10.24.8.54:3000",
+  baseURL: "http://10.24.9.147:3000",
 });
 
 api.interceptors.request.use(async (config) => {
