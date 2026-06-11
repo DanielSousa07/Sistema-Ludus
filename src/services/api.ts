@@ -1,10 +1,10 @@
 import axios from "axios";
 import * as SecureStore from "expo-secure-store";
-import { showLudusAlert } from "./alert.service"; // Importando a nossa ponte de alerta
+import { showLudusAlert } from "./alert.service";
 import { goToVerify } from "./navigation";
 
 export const api = axios.create({
-  baseURL: "http://10.24.9.147:3000",
+  baseURL: "http://10.229.161.72:3000",
 });
 
 api.interceptors.request.use(async (config) => {

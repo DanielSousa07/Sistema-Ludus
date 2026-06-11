@@ -1,5 +1,5 @@
 import { api } from "@/src/services/api";
-import { useFocusEffect, useLocalSearchParams, useRouter } from "expo-router"; // 👇 useFocusEffect adicionado
+import { useFocusEffect, useLocalSearchParams, useRouter } from "expo-router";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   ActivityIndicator,
@@ -58,22 +58,13 @@ type GameDetails = {
   tier?: string | null;
 };
 
-type Copy = {
-  id: string;
-  code?: string | null;
-  number: number;
-  condition?: string | null;
-  available: boolean;
-};
-
 type AlertType = "error" | "success" | "info";
 
 export default function GameDetailsScreen() {
   const router = useRouter();
-  const { user, refreshUser } = useAuth(); // 👇 refreshUser extraído aqui
+  const { user, refreshUser } = useAuth();
   const isAdmin = user?.role === "ADMIN";
 
-  // 👇 ATUALIZAÇÃO SILENCIOSA 👇
   // Sempre que o utilizador abrir a tela deste jogo, verificamos o status real dele no servidor.
   useFocusEffect(
     useCallback(() => {
@@ -101,7 +92,6 @@ export default function GameDetailsScreen() {
   const [errMsg, setErrMsg] = useState<string | null>(null);
 
   const [rentOpen, setRentOpen] = useState(false);
-  const [availableCopies, setAvailableCopies] = useState<Copy[]>([]);
   const [rentLoading, setRentLoading] = useState(false);
 
   const [rateOpen, setRateOpen] = useState(false);
@@ -113,9 +103,12 @@ export default function GameDetailsScreen() {
 
   const [termsOpen, setTermsOpen] = useState(false);
   const [termsLoading, setTermsLoading] = useState(false);
-  const pendingRentRef = useRef<
-    null | { type: "original" } | { type: "copy"; copyId: string }
-  >(null);
+
+  // Guardamos as datas selecionadas caso os termos precisem ser aceitos antes de concluir
+  const pendingRentRef = useRef<null | {
+    startDateIso: string;
+    endDateIso: string;
+  }>(null);
 
   const [alertVisible, setAlertVisible] = useState(false);
   const [alertType, setAlertType] = useState<AlertType>("info");
@@ -286,89 +279,30 @@ export default function GameDetailsScreen() {
       .catch(() => setCanRate(false));
   }, [game?.id]);
 
-  const rentOriginalNow = useCallback(async () => {
-    if (!game) return;
-
-    try {
-      await api.post("/rentals", { gameId: game.id });
-      showAlert(
-        "success",
-        "Pedido de aluguel solocitado!",
-        "Retire o seu jogo na Biblioteca IFMA - Campus Timon",
-      );
-      setRentOpen(false);
-      await fetchDetails();
-    } catch (e: any) {
-      if (isTermsBlocked(e)) {
-        pendingRentRef.current = { type: "original" };
-        setTermsOpen(true);
-        return;
-      }
-
-      const code = e?.response?.data?.code;
-      const msg = e?.response?.data?.error;
-
-      if (code === "ONLY_COPIES_ALLOWED") {
-        setRentOpen(true);
-        showAlert(
-          "info",
-          "Escolha um exemplar",
-          "Este jogo só pode ser alugado por exemplar.",
-        );
-        return;
-      }
-
-      if (code === "GAME_UNAVAILABLE") {
-        showAlert(
-          "error",
-          "Indisponível",
-          "Este jogo não está disponível no momento.",
-        );
-        return;
-      }
-
-      if (code === "RENTAL_LIMIT_REACHED") {
-        showAlert(
-          "info",
-          "Limite atingido",
-          "Você já possui 2 aluguéis em aberto. Finalize um para alugar outro.",
-        );
-        return;
-      }
-
-      if (code === "TIER_ACCESS_DENIED") {
-        showAlert(
-          "error",
-          "Acesso restrito",
-          msg || "Sua categoria de cliente não permite alugar este jogo.",
-        );
-        return;
-      }
-
-      showAlert(
-        "error",
-        "Erro",
-        msg || "Não foi possível alugar. Tente novamente.",
-      );
-    }
-  }, [game, fetchDetails, showAlert]);
-
-  const rentCopyNow = useCallback(
-    async (copyId: string) => {
+  // Função central para envio das datas do calendário para a API
+  const handleConfirmRental = useCallback(
+    async (startDateIso: string, endDateIso: string) => {
       if (!game) return;
 
+      setRentLoading(true);
       try {
-        await api.post("/rentals", { gameId: game.id, copyId });
+        await api.post("/rentals", {
+          gameId: game.id,
+          startDateIso,
+          endDateIso,
+        });
+
         showAlert(
           "success",
-          "Exemplar alugado!",
-          "Retire o seu jogo na Biblioteca IFMA - Campus Timon",
+          "Reserva Confirmada! 🎲",
+          "Retire o seu jogo na Biblioteca IFMA - Campus Timon no horário agendado.",
         );
         setRentOpen(false);
         await fetchDetails();
       } catch (e: any) {
+        // Se não aceitou os termos, salva as datas no ref e abre modal de termos
         if (isTermsBlocked(e)) {
-          pendingRentRef.current = { type: "copy", copyId };
+          pendingRentRef.current = { startDateIso, endDateIso };
           setTermsOpen(true);
           return;
         }
@@ -380,16 +314,7 @@ export default function GameDetailsScreen() {
           showAlert(
             "info",
             "Limite atingido",
-            "Você já possui 2 aluguéis em aberto. Finalize um para alugar outro.",
-          );
-          return;
-        }
-
-        if (code === "COPY_UNAVAILABLE") {
-          showAlert(
-            "error",
-            "Exemplar indisponível",
-            "Esse exemplar acabou de ficar indisponível. Atualize e tente outro.",
+            "Você já possui 2 aluguéis em aberto. Finalize um para agendar outro.",
           );
           return;
         }
@@ -403,11 +328,24 @@ export default function GameDetailsScreen() {
           return;
         }
 
+        if (code === "TIME_SLOT_TAKEN") {
+          showAlert(
+            "error",
+            "Horário Ocupado",
+            msg ||
+              "Todos os exemplares deste jogo já estão reservados para este horário.",
+          );
+          return;
+        }
+
         showAlert(
           "error",
-          "Erro",
-          msg || "Não foi possível alugar o exemplar.",
+          "Erro ao reservar",
+          msg ||
+            "Não foi possível processar o seu agendamento. Tente novamente.",
         );
+      } finally {
+        setRentLoading(false);
       }
     },
     [game, fetchDetails, showAlert],
@@ -424,8 +362,8 @@ export default function GameDetailsScreen() {
       const pending = pendingRentRef.current;
       pendingRentRef.current = null;
 
-      if (pending.type === "original") await rentOriginalNow();
-      else await rentCopyNow(pending.copyId);
+      // Dispara novamente o agendamento com as datas recuperadas da memória
+      await handleConfirmRental(pending.startDateIso, pending.endDateIso);
     } catch {
       showAlert(
         "error",
@@ -435,33 +373,12 @@ export default function GameDetailsScreen() {
     } finally {
       setTermsLoading(false);
     }
-  }, [rentCopyNow, rentOriginalNow, showAlert]);
+  }, [handleConfirmRental, showAlert]);
 
-  const openRentFlow = useCallback(async () => {
+  const openRentFlow = useCallback(() => {
     if (!game) return;
-
-    setRentLoading(true);
-    try {
-      const res = await api.get(`/games/${game.id}/copies/available`);
-      const copies: Copy[] = res.data || [];
-      setAvailableCopies(copies);
-
-      if (copies.length === 0) {
-        await rentOriginalNow();
-        return;
-      }
-
-      setRentOpen(true);
-    } catch {
-      showAlert(
-        "error",
-        "Erro",
-        "Não foi possível carregar os exemplares disponíveis.",
-      );
-    } finally {
-      setRentLoading(false);
-    }
-  }, [game, rentOriginalNow, showAlert]);
+    setRentOpen(true); // Abre direto o modal do calendário, sem buscar cópias primeiro!
+  }, [game]);
 
   const checkFavorite = useCallback(async (gameId: string) => {
     try {
@@ -571,7 +488,7 @@ export default function GameDetailsScreen() {
                   setRateOpen(true);
                 }}
                 available={!!game.available}
-                rentalDaysText="Até 3 dias"
+                rentalDaysText="Por agendamento"
                 availabilityForecast={null}
                 tier={game.tier}
               />
@@ -690,7 +607,6 @@ export default function GameDetailsScreen() {
                 if (user?.registrationStatus !== "APPROVED") {
                   const isRejected = user?.registrationStatus === "REJECTED";
 
-                  // 👇 VALIDAÇÃO ATUALIZADA PARA EXIGIR AS 4 FOTOS 👇
                   const hasSentDocs = Boolean(
                     (user as any)?.documentFrontImage &&
                     (user as any)?.documentBackImage &&
@@ -724,11 +640,10 @@ export default function GameDetailsScreen() {
 
           <RentModal
             visible={rentOpen}
-            copies={availableCopies}
-            allowOriginalRental={game.allowOriginalRental !== false}
+            gameId={game.id}
+            loading={rentLoading}
             onClose={() => setRentOpen(false)}
-            onRentOriginal={rentOriginalNow}
-            onRentCopy={(copyId: string) => rentCopyNow(copyId)}
+            onConfirm={handleConfirmRental}
           />
 
           <TermsRentModal
