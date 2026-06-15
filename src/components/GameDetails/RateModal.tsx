@@ -9,11 +9,22 @@ type Props = {
   onSave: (value: number) => void;
 };
 
-export function RateModal({ visible, currentValue, saving, onClose, onSave }: Props) {
+export function RateModal({
+  visible,
+  currentValue,
+  saving,
+  onClose,
+  onSave,
+}: Props) {
   const value = currentValue ?? 0;
 
   return (
-    <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
+    <Modal
+      visible={visible}
+      transparent
+      animationType="fade"
+      onRequestClose={onClose}
+    >
       <Pressable style={styles.backdrop} onPress={onClose} />
       <View style={styles.card}>
         <Text style={styles.title}>Sua avaliação</Text>
@@ -41,7 +52,9 @@ export function RateModal({ visible, currentValue, saving, onClose, onSave }: Pr
         </View>
 
         <Pressable onPress={onClose} disabled={saving} style={styles.closeBtn}>
-          <Text style={styles.closeText}>{saving ? "Salvando..." : "Fechar"}</Text>
+          <Text style={styles.closeText}>
+            {saving ? "Salvando..." : "Fechar"}
+          </Text>
         </Pressable>
       </View>
     </Modal>

@@ -1,6 +1,6 @@
 import { api } from "@/src/services/api";
 import { Ionicons } from "@expo/vector-icons";
-import React, { useCallback, useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import {
   ActivityIndicator,
   Modal,
@@ -10,7 +10,8 @@ import {
   Text,
   View,
 } from "react-native";
-import { LudusClockPicker } from "./LudusClockPicker"; // 👇 Importamos a nossa Obra-Prima
+import { LudusCalendar } from "./LudusCalendar"; // 👇 O Novo Componente
+import { LudusClockPicker } from "./LudusClockPicker";
 
 interface RentModalProps {
   visible: boolean;
@@ -19,23 +20,6 @@ interface RentModalProps {
   onConfirm: (startDateIso: string, endDateIso: string) => Promise<void>;
   loading?: boolean;
 }
-
-const MONTH_NAMES = [
-  "Janeiro",
-  "Fevereiro",
-  "Março",
-  "Abril",
-  "Maio",
-  "Junho",
-  "Julho",
-  "Agosto",
-  "Setembro",
-  "Outubro",
-  "Novembro",
-  "Dezembro",
-];
-
-const WEEK_DAYS = ["D", "S", "T", "Q", "Q", "S", "S"];
 
 export function RentModal({
   visible,
@@ -46,17 +30,18 @@ export function RentModal({
 }: RentModalProps) {
   const today = new Date();
 
+  // Estados do Calendário
   const [currentYear, setCurrentYear] = useState(today.getFullYear());
   const [currentMonth, setCurrentMonth] = useState(today.getMonth());
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
-
   const [unavailableDates, setUnavailableDates] = useState<string[]>([]);
   const [loadingCalendar, setLoadingCalendar] = useState(false);
 
-  // Controle de visibilidade do relógio customizado
+  // Controle de visibilidade dos relógios
   const [pickerStartVisible, setPickerStartVisible] = useState(false);
   const [pickerEndVisible, setPickerEndVisible] = useState(false);
 
+  // Estados dos Relógios
   const [startTime, setStartTime] = useState<Date>(() => {
     const d = new Date();
     d.setHours(8, 0, 0, 0);
@@ -71,6 +56,7 @@ export function RentModal({
 
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
+  // Busca os dias indisponíveis da API
   const fetchUnavailableDates = useCallback(
     async (year: number, month: number) => {
       if (!gameId) return;
@@ -114,7 +100,6 @@ export function RentModal({
       currentMonth === today.getMonth()
     )
       return;
-
     if (currentMonth === 0) {
       setCurrentMonth(11);
       setCurrentYear(currentYear - 1);
@@ -130,25 +115,6 @@ export function RentModal({
     } else {
       setCurrentMonth(currentMonth + 1);
     }
-  };
-
-  const calendarGrid = useMemo(() => {
-    const firstDay = new Date(currentYear, currentMonth, 1).getDay();
-    const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
-    const days = [];
-
-    for (let i = 0; i < firstDay; i++) {
-      days.push(null);
-    }
-    for (let day = 1; day <= daysInMonth; day++) {
-      days.push(day);
-    }
-
-    return days;
-  }, [currentYear, currentMonth]);
-
-  const formatDateToApiStr = (year: number, month: number, day: number) => {
-    return `${year}-${String(month + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
   };
 
   const validateAndSubmit = async () => {
@@ -207,149 +173,23 @@ export function RentModal({
             showsVerticalScrollIndicator={false}
             contentContainerStyle={{ paddingBottom: 20 }}
           >
-            {/* LUDUS CALENDAR CUSTOMIZADO */}
-            <View style={styles.calendarContainer}>
-              <View style={styles.calendarHeader}>
-                <Pressable onPress={handlePrevMonth} style={styles.monthNavBtn}>
-                  <Ionicons
-                    name="chevron-back"
-                    size={24}
-                    color={
-                      currentYear === today.getFullYear() &&
-                      currentMonth === today.getMonth()
-                        ? "#D1D5DB"
-                        : "#04096E"
-                    }
-                  />
-                </Pressable>
-
-                <Text style={styles.monthTitle}>
-                  {MONTH_NAMES[currentMonth]} {currentYear}
-                </Text>
-
-                <Pressable onPress={handleNextMonth} style={styles.monthNavBtn}>
-                  <Ionicons name="chevron-forward" size={24} color="#04096E" />
-                </Pressable>
-              </View>
-
-              <View style={styles.weekDaysRow}>
-                {WEEK_DAYS.map((wd, index) => (
-                  <Text key={index} style={styles.weekDayText}>
-                    {wd}
-                  </Text>
-                ))}
-              </View>
-
-              {loadingCalendar ? (
-                <View style={styles.calendarLoading}>
-                  <ActivityIndicator color="#04096E" size="large" />
-                </View>
-              ) : unavailableDates[0] === "ALL" ? (
-                <View style={styles.calendarLoading}>
-                  <Ionicons name="alert-circle" size={32} color="#E62325" />
-                  <Text style={styles.allUnavailableText}>
-                    Nenhum exemplar físico cadastrado e disponível para este
-                    jogo no momento.
-                  </Text>
-                </View>
-              ) : (
-                <View style={styles.daysGrid}>
-                  {calendarGrid.map((day, index) => {
-                    if (day === null) {
-                      return (
-                        <View key={`empty-${index}`} style={styles.dayCell} />
-                      );
-                    }
-
-                    const isToday =
-                      day === today.getDate() &&
-                      currentMonth === today.getMonth() &&
-                      currentYear === today.getFullYear();
-                    const dayDateObj = new Date(
-                      currentYear,
-                      currentMonth,
-                      day,
-                      23,
-                      59,
-                      59,
-                    );
-                    const isPast = dayDateObj < today && !isToday;
-                    const dayOfWeek = new Date(
-                      currentYear,
-                      currentMonth,
-                      day,
-                    ).getDay();
-                    const isWeekend = dayOfWeek === 0 || dayOfWeek === 6;
-                    const dateStr = formatDateToApiStr(
-                      currentYear,
-                      currentMonth,
-                      day,
-                    );
-                    const isFullBooked = unavailableDates.includes(dateStr);
-                    const isSelected =
-                      selectedDate?.getDate() === day &&
-                      selectedDate?.getMonth() === currentMonth &&
-                      selectedDate?.getFullYear() === currentYear;
-
-                    const isDisabled = isPast || isWeekend || isFullBooked;
-
-                    return (
-                      <Pressable
-                        key={day}
-                        disabled={isDisabled}
-                        onPress={() =>
-                          setSelectedDate(
-                            new Date(currentYear, currentMonth, day),
-                          )
-                        }
-                        style={[
-                          styles.dayCell,
-                          isSelected && styles.dayCellSelected,
-                          isDisabled && styles.dayCellDisabled,
-                        ]}
-                      >
-                        <Text
-                          style={[
-                            styles.dayText,
-                            isSelected && styles.dayTextSelected,
-                            isDisabled && styles.dayTextDisabled,
-                            isToday && !isSelected && styles.dayTextToday,
-                          ]}
-                        >
-                          {day}
-                        </Text>
-
-                        {isFullBooked && <View style={styles.dotRed} />}
-                      </Pressable>
-                    );
-                  })}
-                </View>
-              )}
-            </View>
-
-            <View style={styles.legendRow}>
-              <View style={styles.legendItem}>
-                <View
-                  style={[styles.legendDot, { backgroundColor: "#F3F4F6" }]}
-                />
-                <Text style={styles.legendText}>Fechado</Text>
-              </View>
-              <View style={styles.legendItem}>
-                <View
-                  style={[styles.legendDot, { backgroundColor: "#E62325" }]}
-                />
-                <Text style={styles.legendText}>Esgotado</Text>
-              </View>
-            </View>
-
-            <View style={styles.divider} />
+            {/* 👇 O NOVO COMPONENTE LUDUS CALENDAR 👇 */}
+            <LudusCalendar
+              currentYear={currentYear}
+              currentMonth={currentMonth}
+              selectedDate={selectedDate}
+              unavailableDates={unavailableDates}
+              isLoading={loadingCalendar}
+              onSelectDate={setSelectedDate}
+              onPrevMonth={handlePrevMonth}
+              onNextMonth={handleNextMonth}
+            />
 
             <View style={styles.row}>
               <View
                 style={[styles.fieldContainer, { flex: 1, marginRight: 8 }]}
               >
                 <Text style={styles.label}>Retirada (08h+)</Text>
-                {/* 👇 AQUI CHAMAMOS O NOVO MODAL */}
                 <Pressable
                   style={styles.pickerBox}
                   onPress={() => setPickerStartVisible(true)}
@@ -366,7 +206,6 @@ export function RentModal({
 
               <View style={[styles.fieldContainer, { flex: 1, marginLeft: 8 }]}>
                 <Text style={styles.label}>Devolução (até 19h)</Text>
-                {/* 👇 AQUI CHAMAMOS O NOVO MODAL */}
                 <Pressable
                   style={styles.pickerBox}
                   onPress={() => setPickerEndVisible(true)}
@@ -407,15 +246,13 @@ export function RentModal({
         </View>
       </View>
 
-      {/* ======================================================= */}
-      {/* RENDERIZAÇÃO DO RELÓGIO EXCLUSIVO LUDUS                 */}
-      {/* ======================================================= */}
+      {/* MODAIS DE RELÓGIO (Ocultos até o clique) */}
       <LudusClockPicker
         visible={pickerStartVisible}
         title="Horário de Retirada"
         initialDate={startTime}
         minHour={8}
-        maxHour={18} // Trava pra retirada máxima às 18:55
+        maxHour={18}
         onClose={() => setPickerStartVisible(false)}
         onConfirm={(date) => {
           setStartTime(date);
@@ -467,125 +304,6 @@ const styles = StyleSheet.create({
     padding: 4,
     backgroundColor: "#F3F4F6",
     borderRadius: 20,
-  },
-  calendarContainer: {
-    backgroundColor: "#FFFFFF",
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: "#E5E7EB",
-    padding: 16,
-    marginBottom: 12,
-  },
-  calendarHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: 16,
-  },
-  monthTitle: {
-    fontSize: 18,
-    fontWeight: "bold",
-    color: "#0A1628",
-    textTransform: "capitalize",
-  },
-  monthNavBtn: {
-    padding: 8,
-  },
-  weekDaysRow: {
-    flexDirection: "row",
-    justifyContent: "space-around",
-    marginBottom: 8,
-  },
-  weekDayText: {
-    width: 36,
-    textAlign: "center",
-    fontSize: 12,
-    fontWeight: "bold",
-    color: "#9CA3AF",
-  },
-  daysGrid: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    justifyContent: "space-between",
-  },
-  dayCell: {
-    width: "13%",
-    aspectRatio: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    marginBottom: 8,
-    borderRadius: 12,
-  },
-  dayCellSelected: {
-    backgroundColor: "#04096E",
-  },
-  dayCellDisabled: {
-    backgroundColor: "#F9FAFB",
-  },
-  dayText: {
-    fontSize: 16,
-    fontWeight: "600",
-    color: "#374151",
-  },
-  dayTextSelected: {
-    color: "#FBBC04",
-    fontWeight: "900",
-  },
-  dayTextDisabled: {
-    color: "#D1D5DB",
-  },
-  dayTextToday: {
-    color: "#FBBC04",
-    fontWeight: "900",
-  },
-  dotRed: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-    backgroundColor: "#E62325",
-    position: "absolute",
-    bottom: 4,
-  },
-  calendarLoading: {
-    height: 200,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  allUnavailableText: {
-    marginTop: 12,
-    color: "#E62325",
-    textAlign: "center",
-    fontWeight: "bold",
-    fontSize: 14,
-    paddingHorizontal: 20,
-  },
-  legendRow: {
-    flexDirection: "row",
-    justifyContent: "center",
-    gap: 16,
-    marginBottom: 24,
-  },
-  legendItem: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-  },
-  legendDot: {
-    width: 12,
-    height: 12,
-    borderRadius: 6,
-    borderWidth: 1,
-    borderColor: "#E5E7EB",
-  },
-  legendText: {
-    fontSize: 12,
-    color: "#6B7280",
-    fontWeight: "600",
-  },
-  divider: {
-    height: 1,
-    backgroundColor: "#E5E7EB",
-    marginBottom: 24,
   },
   row: {
     flexDirection: "row",
@@ -656,7 +374,7 @@ const styles = StyleSheet.create({
     elevation: 4,
   },
   buttonText: {
-    color: "#FBBC04",
+    color: "#f8f7f3",
     fontSize: 16,
     fontWeight: "900",
   },
