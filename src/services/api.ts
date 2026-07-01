@@ -4,7 +4,7 @@ import { showLudusAlert } from "./alert.service";
 import { goToVerify } from "./navigation";
 
 export const api = axios.create({
-  baseURL: "http://10.24.9.101:3000",
+  baseURL: "https://backend-ludus-production-d1f7.up.railway.app",
 });
 
 api.interceptors.request.use(async (config) => {

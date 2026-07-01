@@ -494,9 +494,14 @@ export default function GameDetailsScreen() {
               />
 
               <GameFactsRow
-                players={playersText}
-                time={timeText}
-                age={ageText}
+                minPlayers={game.minPlayers}
+                maxPlayers={game.maxPlayers}
+                minTime={game.minTime}
+                maxTime={game.maxTime}
+                minAge={game.minAge}
+                // adicionar essas propriedades na API:
+                // complexity={game.complexity}
+                // year={game.yearPublished}
               />
 
               <View style={styles.tabs}>

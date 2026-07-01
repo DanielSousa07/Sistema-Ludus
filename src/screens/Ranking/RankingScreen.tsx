@@ -17,6 +17,7 @@ import {
 const RED = "#B3193A";
 const BLUE = "#04096E";
 const YELLOW = "#FFC107";
+const GRAY = "#8A8A8A";
 
 const DEFAULT_AVATAR = require("../../../assets/profile-default.png");
 
@@ -105,7 +106,9 @@ export default function RankingScreen() {
 
     try {
       const [leaderRes, meRes] = await Promise.all([
-        api.get<LeaderRow[]>("/engagement/leaderboard", { params: { limit: 50 } }),
+        api.get<LeaderRow[]>("/engagement/leaderboard", {
+          params: { limit: 50 },
+        }),
         api.get<MeRow>("/engagement/me"),
       ]);
 
@@ -160,28 +163,42 @@ export default function RankingScreen() {
       <BackButton />
 
       <View style={styles.card}>
-        <Pressable style={styles.redBtn} onPress={() => setShowRules((s) => !s)}>
+        <Pressable
+          style={styles.redBtn}
+          onPress={() => setShowRules((s) => !s)}
+        >
           <Ionicons name="information-circle" size={18} color="#fff" />
           <Text style={styles.redBtnText}>Como ganhar pontos</Text>
         </Pressable>
 
         {showRules && (
           <View style={styles.rulesBox}>
-            <Text style={styles.rulesTitle}>Regras rápidas</Text>
+            <Text style={styles.rulesTitle}>Sistema de Pontuação</Text>
 
             <View style={styles.ruleRow}>
               <View style={[styles.dot, { backgroundColor: YELLOW }]} />
-              <Text style={styles.ruleText}>+7 pts ao finalizar um aluguel</Text>
-            </View>
-
-            <View style={styles.ruleRow}>
-              <View style={[styles.dot, { backgroundColor: RED }]} />
-              <Text style={styles.ruleText}>+5 pts ao delvolver</Text>
+              <Text style={styles.ruleText}>
+                +5 pts ao confirmar a retirada oficial
+              </Text>
             </View>
 
             <View style={styles.ruleRow}>
               <View style={[styles.dot, { backgroundColor: BLUE }]} />
-              <Text style={styles.ruleText}>+3 pts na 1ª avaliação do jogo</Text>
+              <Text style={styles.ruleText}>
+                +5 pts ao devolver no tempo correto
+              </Text>
+            </View>
+
+            <View style={styles.ruleRow}>
+              <View style={[styles.dot, { backgroundColor: GRAY }]} />
+              <Text style={styles.ruleText}>+2 pts ao devolver com atraso</Text>
+            </View>
+
+            <View style={styles.ruleRow}>
+              <View style={[styles.dot, { backgroundColor: RED }]} />
+              <Text style={styles.ruleText}>
+                -20 pts por danos ou perda de componentes
+              </Text>
             </View>
           </View>
         )}
@@ -202,7 +219,12 @@ export default function RankingScreen() {
           <FlatList
             data={data}
             keyExtractor={(item) => item.userId}
-            refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => load(true)} />}
+            refreshControl={
+              <RefreshControl
+                refreshing={refreshing}
+                onRefresh={() => load(true)}
+              />
+            }
             contentContainerStyle={{ paddingBottom: 22 }}
             ListHeaderComponent={
               <>
@@ -217,11 +239,19 @@ export default function RankingScreen() {
 
               return (
                 <View style={[styles.row, isMe && styles.rowMe]}>
-                  <View style={[styles.rankBadge, { backgroundColor: badge.bg }]}>
-                    <Text style={[styles.rankBadgeText, { color: badge.fg }]}>{item.rank}</Text>
+                  <View
+                    style={[styles.rankBadge, { backgroundColor: badge.bg }]}
+                  >
+                    <Text style={[styles.rankBadgeText, { color: badge.fg }]}>
+                      {item.rank}
+                    </Text>
                   </View>
 
-                  <Avatar uri={item.avatar} picture={item.picture} radius={150}/>
+                  <Avatar
+                    uri={item.avatar}
+                    picture={item.picture}
+                    radius={150}
+                  />
 
                   <View style={{ flex: 1 }}>
                     <Text style={styles.name} numberOfLines={1}>
@@ -293,14 +323,14 @@ const styles = StyleSheet.create({
   rulesTitle: {
     fontWeight: "900",
     color: "#222",
-    marginBottom: 8,
+    marginBottom: 12,
   },
 
   ruleRow: {
     flexDirection: "row",
     alignItems: "center",
     gap: 8,
-    marginBottom: 6,
+    marginBottom: 8,
   },
 
   dot: {

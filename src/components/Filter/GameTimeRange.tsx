@@ -23,8 +23,8 @@ export function GameTimeRange({
   }, [valueMax]);
 
   const label = useMemo(() => {
-    if (max >= maxLimit) return `${maxLimit}+ min`;
-    return `Até ${max} min`;
+    if (max >= maxLimit) return `${maxLimit}+ minutos`;
+    return `Até ${max} minutos`;
   }, [max, maxLimit]);
 
   const commit = (v: number) => {
@@ -34,21 +34,29 @@ export function GameTimeRange({
   };
 
   return (
-    <View style={{ marginTop: 18 }}>
-      <Text style={styles.title}>Tempo de jogo</Text>
-      <Text style={{ color: "#535353", marginBottom: 10 }}>{label}</Text>
+    <View style={{ marginTop: 8 }}>
+      <Text style={styles.title}>Tempo de Jogo</Text>
 
-      <Slider
-        minimumValue={minLimit}
-        maximumValue={maxLimit}
-        step={5}
-        value={max}
-        onValueChange={(v) => setMax(v)}
-        onSlidingComplete={commit}
-        minimumTrackTintColor="#B3193A"
-        maximumTrackTintColor="#c1acace3"
-        thumbTintColor="#B3193A"
-      />
+      <View style={styles.sliderContainer}>
+        <View style={styles.sliderHeader}>
+          <Text style={{ color: "#6B7280", fontWeight: "600", fontSize: 13 }}>
+            Duração
+          </Text>
+          <Text style={styles.sliderValue}>{label}</Text>
+        </View>
+
+        <Slider
+          minimumValue={minLimit}
+          maximumValue={maxLimit}
+          step={5}
+          value={max}
+          onValueChange={(v) => setMax(v)}
+          onSlidingComplete={commit}
+          minimumTrackTintColor="#B3193A"
+          maximumTrackTintColor="#E5E7EB"
+          thumbTintColor="#B3193A"
+        />
+      </View>
     </View>
   );
 }

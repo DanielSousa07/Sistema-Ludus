@@ -4,15 +4,21 @@ import { StyleSheet, Text, TextInput, View } from "react-native";
 type Props = {
   name: string;
   phone: string;
+  email: string;
+  isIfmaMode: boolean;
   onChangeName: (value: string) => void;
   onChangePhone: (value: string) => void;
+  onChangeEmail: (value: string) => void;
 };
 
 export function AccountPersonalForm({
   name,
   phone,
+  email,
+  isIfmaMode,
   onChangeName,
   onChangePhone,
+  onChangeEmail,
 }: Props) {
   return (
     <>
@@ -27,10 +33,29 @@ export function AccountPersonalForm({
             placeholderTextColor="#8B8EA1"
             style={styles.input}
           />
-
           <Ionicons name="pencil-outline" size={18} color="#8B8EA1" />
         </View>
       </View>
+
+      {/* Só mostra o input editável de E-mail se NÃO for Modo IFMA */}
+      {!isIfmaMode && (
+        <View style={styles.section}>
+          <Text style={styles.label}>E-mail</Text>
+
+          <View style={styles.inputWrap}>
+            <TextInput
+              value={email}
+              onChangeText={onChangeEmail}
+              placeholder="seu@email.com"
+              placeholderTextColor="#8B8EA1"
+              keyboardType="email-address"
+              autoCapitalize="none"
+              style={styles.input}
+            />
+            <Ionicons name="pencil-outline" size={18} color="#8B8EA1" />
+          </View>
+        </View>
+      )}
 
       <View style={styles.section}>
         <Text style={styles.label}>Telefone</Text>
@@ -44,7 +69,6 @@ export function AccountPersonalForm({
             keyboardType="phone-pad"
             style={styles.input}
           />
-
           <Ionicons name="pencil-outline" size={18} color="#8B8EA1" />
         </View>
       </View>
@@ -57,28 +81,23 @@ const styles = StyleSheet.create({
     marginTop: 18,
     marginBottom: 2,
   },
-
   label: {
     fontSize: 15,
     fontWeight: "900",
     color: "#31358B",
     marginBottom: 8,
   },
-
   inputWrap: {
     height: 56,
     borderRadius: 18,
     backgroundColor: "#F3F5FF",
     paddingHorizontal: 16,
-
     borderWidth: 1,
     borderColor: "rgba(49,53,139,0.08)",
-
     flexDirection: "row",
     alignItems: "center",
     gap: 8,
   },
-
   input: {
     flex: 1,
     fontSize: 15,

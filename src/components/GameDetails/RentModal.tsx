@@ -1,6 +1,6 @@
 import { api } from "@/src/services/api";
 import { Ionicons } from "@expo/vector-icons";
-import React, { useCallback, useEffect, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import {
   ActivityIndicator,
   Modal,
@@ -10,8 +10,7 @@ import {
   Text,
   View,
 } from "react-native";
-import { LudusCalendar } from "./LudusCalendar"; // 👇 O Novo Componente
-import { LudusClockPicker } from "./LudusClockPicker";
+import { LudusCalendar } from "./LudusCalendar";
 
 interface RentModalProps {
   visible: boolean;
@@ -20,6 +19,18 @@ interface RentModalProps {
   onConfirm: (startDateIso: string, endDateIso: string) => Promise<void>;
   loading?: boolean;
 }
+
+// Helpers Matemáticos para lidar com os blocos de 30 minutos
+const timeToMins = (time: string) => {
+  const [h, m] = time.split(":").map(Number);
+  return h * 60 + m;
+};
+
+const minsToTime = (mins: number) => {
+  const h = Math.floor(mins / 60);
+  const m = mins % 60;
+  return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`;
+};
 
 export function RentModal({
   visible,
@@ -34,65 +45,181 @@ export function RentModal({
   const [currentYear, setCurrentYear] = useState(today.getFullYear());
   const [currentMonth, setCurrentMonth] = useState(today.getMonth());
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
-  const [unavailableDates, setUnavailableDates] = useState<string[]>([]);
-  const [loadingCalendar, setLoadingCalendar] = useState(false);
 
-  // Controle de visibilidade dos relógios
-  const [pickerStartVisible, setPickerStartVisible] = useState(false);
-  const [pickerEndVisible, setPickerEndVisible] = useState(false);
+  // Controle de Turno (Manhã / Tarde)
+  const [activePeriod, setActivePeriod] = useState<"morning" | "afternoon">(
+    "morning",
+  );
 
-  // Estados dos Relógios
-  const [startTime, setStartTime] = useState<Date>(() => {
-    const d = new Date();
-    d.setHours(8, 0, 0, 0);
-    return d;
-  });
-
-  const [endTime, setEndTime] = useState<Date>(() => {
-    const d = new Date();
-    d.setHours(18, 0, 0, 0);
-    return d;
-  });
-
+  // Estados da API e Lista
+  const [availableSlots, setAvailableSlots] = useState<string[]>([]);
+  const [loadingSlots, setLoadingSlots] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
-  // Busca os dias indisponíveis da API
-  const fetchUnavailableDates = useCallback(
-    async (year: number, month: number) => {
-      if (!gameId) return;
-      setLoadingCalendar(true);
-      try {
-        const response = await api.get(
-          `/rentals/game/${gameId}/unavailable-dates`,
-          {
-            params: { year, month },
-          },
-        );
+  // Controle da Seleção Contínua (Primeiro bloco e Último bloco clicados)
+  const [selectionStart, setSelectionStart] = useState<string | null>(null);
+  const [selectionEnd, setSelectionEnd] = useState<string | null>(null);
 
-        if (response.data?.unavailableDates) {
-          if (response.data.unavailableDates[0] === "ALL") {
-            setUnavailableDates(["ALL"]);
-          } else {
-            setUnavailableDates(response.data.unavailableDates);
-          }
-        }
+  // Limpa tudo ao abrir/fechar o modal
+  useEffect(() => {
+    if (visible) {
+      setErrorMsg(null);
+      setSelectedDate(null);
+      setSelectionStart(null);
+      setSelectionEnd(null);
+      setAvailableSlots([]);
+      setActivePeriod("morning");
+    }
+  }, [visible]);
+
+  // Busca a disponibilidade do dia na API
+  const fetchSlotsForDate = useCallback(
+    async (date: Date) => {
+      if (!gameId) return;
+      setLoadingSlots(true);
+      setSelectionStart(null);
+      setSelectionEnd(null);
+      setErrorMsg(null);
+
+      const dateStr = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
+
+      try {
+        const response = await api.get(`/rentals/game/${gameId}/availability`, {
+          params: { date: dateStr },
+        });
+        setAvailableSlots(response.data?.availableSlots || []);
       } catch (err) {
-        console.error("Erro ao buscar calendário:", err);
+        console.error("Erro ao buscar horários:", err);
+        setErrorMsg("Não foi possível carregar os horários livres.");
       } finally {
-        setLoadingCalendar(false);
+        setLoadingSlots(false);
       }
     },
     [gameId],
   );
 
   useEffect(() => {
-    if (visible) {
-      setErrorMsg(null);
-      fetchUnavailableDates(currentYear, currentMonth);
-    } else {
-      setSelectedDate(null);
+    if (selectedDate) {
+      setActivePeriod("morning"); // Reseta para a manhã ao trocar de dia
+      fetchSlotsForDate(selectedDate);
     }
-  }, [visible, currentYear, currentMonth, fetchUnavailableDates]);
+  }, [selectedDate, fetchSlotsForDate]);
+
+  // LÓGICA DE SELEÇÃO E AGRUPAMENTO SEPARADO POR TURNOS
+  const groupedSlots = useMemo(() => {
+    const buildGroup = (startH: number, endH: number) => {
+      const result = [];
+      let currentOccupiedStart: string | null = null;
+      let currentOccupiedEnd: string | null = null;
+
+      for (let h = startH; h <= endH; h++) {
+        for (let m of [0, 30]) {
+          if (h === 18 && m === 30 && endH === 18) continue;
+
+          const slotStart = `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`;
+          const slotEndMins = timeToMins(slotStart) + 30;
+          const slotEnd = minsToTime(slotEndMins);
+
+          const isAvailable = availableSlots.includes(slotStart);
+
+          if (isAvailable) {
+            if (currentOccupiedStart) {
+              result.push({
+                start: currentOccupiedStart,
+                end: minsToTime(timeToMins(currentOccupiedEnd!) + 30),
+                status: "OCCUPIED",
+              });
+              currentOccupiedStart = null;
+              currentOccupiedEnd = null;
+            }
+            result.push({
+              start: slotStart,
+              end: slotEnd,
+              status: "AVAILABLE",
+            });
+          } else {
+            if (!currentOccupiedStart) {
+              currentOccupiedStart = slotStart;
+            }
+            currentOccupiedEnd = slotStart;
+          }
+        }
+      }
+
+      if (currentOccupiedStart) {
+        result.push({
+          start: currentOccupiedStart,
+          end: minsToTime(timeToMins(currentOccupiedEnd!) + 30),
+          status: "OCCUPIED",
+        });
+      }
+      return result;
+    };
+
+    return {
+      morning: buildGroup(8, 11), // 08:00 às 11:30 (Fim 12:00)
+      afternoon: buildGroup(12, 18), // 12:00 às 18:00 (Fim 19:00)
+    };
+  }, [availableSlots]);
+
+  // A Mágica do Clique: Permite arrastar e selecionar vários blocos
+  const handleSlotPress = (slotStart: string) => {
+    const cMins = timeToMins(slotStart);
+
+    if (!selectionStart || !selectionEnd) {
+      setSelectionStart(slotStart);
+      setSelectionEnd(slotStart);
+      return;
+    }
+
+    let sMins = timeToMins(selectionStart);
+    let eMins = timeToMins(selectionEnd);
+
+    if (cMins === sMins && cMins === eMins) {
+      setSelectionStart(null);
+      setSelectionEnd(null);
+      return;
+    }
+
+    if (cMins >= sMins && cMins <= eMins) {
+      if (cMins === sMins) {
+        setSelectionStart(minsToTime(sMins + 30));
+      } else if (cMins === eMins) {
+        setSelectionEnd(minsToTime(eMins - 30));
+      } else {
+        setSelectionStart(slotStart);
+        setSelectionEnd(slotStart);
+      }
+      return;
+    }
+
+    const min = Math.min(sMins, cMins);
+    const max = Math.max(eMins, cMins);
+
+    let isValid = true;
+    for (let m = min; m <= max; m += 30) {
+      if (!availableSlots.includes(minsToTime(m))) {
+        isValid = false;
+        break;
+      }
+    }
+
+    if (isValid) {
+      setSelectionStart(minsToTime(min));
+      setSelectionEnd(minsToTime(max));
+    } else {
+      setSelectionStart(slotStart);
+      setSelectionEnd(slotStart);
+    }
+  };
+
+  const isSlotSelected = (slotStart: string) => {
+    if (!selectionStart || !selectionEnd) return false;
+    const sMins = timeToMins(selectionStart);
+    const eMins = timeToMins(selectionEnd);
+    const cMins = timeToMins(slotStart);
+    return cMins >= sMins && cMins <= eMins;
+  };
 
   const handlePrevMonth = () => {
     if (
@@ -119,39 +246,26 @@ export function RentModal({
 
   const validateAndSubmit = async () => {
     setErrorMsg(null);
-
-    if (!selectedDate) {
-      return setErrorMsg("Por favor, selecione um dia no calendário.");
-    }
+    if (!selectedDate || !selectionStart || !selectionEnd) return;
 
     const start = new Date(selectedDate);
-    start.setHours(startTime.getHours(), startTime.getMinutes(), 0, 0);
+    const [sh, sm] = selectionStart.split(":").map(Number);
+    start.setHours(sh, sm, 0, 0);
 
+    const endMins = timeToMins(selectionEnd) + 30;
     const end = new Date(selectedDate);
-    end.setHours(endTime.getHours(), endTime.getMinutes(), 0, 0);
-
-    if (start.getHours() < 8 || start.getHours() >= 19) {
-      return setErrorMsg("A retirada deve ser agendada entre 08:00 e 18:59.");
-    }
-
-    if (end.getHours() < 8 || end.getHours() > 19) {
-      return setErrorMsg(
-        "A devolução deve ser agendada no máximo até as 19:00.",
-      );
-    }
-
-    if (start >= end) {
-      return setErrorMsg(
-        "O horário de devolução deve ser maior que o de retirada.",
-      );
-    }
-
-    if (start < new Date()) {
-      return setErrorMsg("Escolha um horário no futuro.");
-    }
+    end.setHours(Math.floor(endMins / 60), endMins % 60, 0, 0);
 
     await onConfirm(start.toISOString(), end.toISOString());
   };
+
+  const hasSelection = selectionStart && selectionEnd;
+  const finalEndTime = hasSelection
+    ? minsToTime(timeToMins(selectionEnd) + 30)
+    : null;
+
+  const currentListToRender =
+    activePeriod === "morning" ? groupedSlots.morning : groupedSlots.afternoon;
 
   return (
     <Modal
@@ -171,107 +285,170 @@ export function RentModal({
 
           <ScrollView
             showsVerticalScrollIndicator={false}
-            contentContainerStyle={{ paddingBottom: 20 }}
+            contentContainerStyle={{ paddingBottom: hasSelection ? 100 : 20 }}
           >
-            {/* 👇 O NOVO COMPONENTE LUDUS CALENDAR 👇 */}
             <LudusCalendar
               currentYear={currentYear}
               currentMonth={currentMonth}
               selectedDate={selectedDate}
-              unavailableDates={unavailableDates}
-              isLoading={loadingCalendar}
+              unavailableDates={[]}
+              isLoading={false}
               onSelectDate={setSelectedDate}
               onPrevMonth={handlePrevMonth}
               onNextMonth={handleNextMonth}
             />
 
-            <View style={styles.row}>
-              <View
-                style={[styles.fieldContainer, { flex: 1, marginRight: 8 }]}
-              >
-                <Text style={styles.label}>Retirada (08h+)</Text>
-                <Pressable
-                  style={styles.pickerBox}
-                  onPress={() => setPickerStartVisible(true)}
-                >
-                  <Ionicons name="time-outline" size={20} color="#22C55E" />
-                  <Text style={styles.pickerText}>
-                    {startTime.toLocaleTimeString("pt-BR", {
-                      hour: "2-digit",
-                      minute: "2-digit",
-                    })}
-                  </Text>
-                </Pressable>
+            {!selectedDate ? (
+              <View style={styles.stateContainer}>
+                <Ionicons name="calendar-outline" size={32} color="#D1D5DB" />
+                <Text style={styles.stateText}>
+                  Toque em um dia no calendário para ver os horários
+                  disponíveis.
+                </Text>
               </View>
-
-              <View style={[styles.fieldContainer, { flex: 1, marginLeft: 8 }]}>
-                <Text style={styles.label}>Devolução (até 19h)</Text>
-                <Pressable
-                  style={styles.pickerBox}
-                  onPress={() => setPickerEndVisible(true)}
-                >
-                  <Ionicons name="time-outline" size={20} color="#E62325" />
-                  <Text style={styles.pickerText}>
-                    {endTime.toLocaleTimeString("pt-BR", {
-                      hour: "2-digit",
-                      minute: "2-digit",
-                    })}
-                  </Text>
-                </Pressable>
+            ) : loadingSlots ? (
+              <View style={styles.stateContainer}>
+                <ActivityIndicator color="#0A1F5C" size="large" />
+                <Text style={styles.stateText}>
+                  Carregando disponibilidade...
+                </Text>
               </View>
-            </View>
+            ) : availableSlots.length === 0 ? (
+              <View style={styles.stateContainer}>
+                <Ionicons name="sad-outline" size={32} color="#E62325" />
+                <Text style={[styles.stateText, { color: "#E62325" }]}>
+                  Poxa, todos os exemplares já estão esgotados neste dia.
+                </Text>
+              </View>
+            ) : (
+              <View style={styles.listContainer}>
+                {/* TABS DE TURNO (MANHÃ / TARDE) - CORES LUDUS */}
+                <View style={styles.periodTabs}>
+                  <Pressable
+                    style={[
+                      styles.periodTab,
+                      activePeriod === "morning" && styles.periodTabActive,
+                    ]}
+                    onPress={() => setActivePeriod("morning")}
+                  >
+                    <Text
+                      style={[
+                        styles.periodTabText,
+                        activePeriod === "morning" &&
+                          styles.periodTabTextActive,
+                      ]}
+                    >
+                      Manhã
+                    </Text>
+                  </Pressable>
+                  <Pressable
+                    style={[
+                      styles.periodTab,
+                      activePeriod === "afternoon" && styles.periodTabActive,
+                    ]}
+                    onPress={() => setActivePeriod("afternoon")}
+                  >
+                    <Text
+                      style={[
+                        styles.periodTabText,
+                        activePeriod === "afternoon" &&
+                          styles.periodTabTextActive,
+                      ]}
+                    >
+                      Tarde
+                    </Text>
+                  </Pressable>
+                </View>
 
-            <View style={styles.infoBox}>
-              <Ionicons name="information-circle" size={24} color="#B8860B" />
-              <Text style={styles.infoText}>
-                No seu nível atual, a devolução deve ocorrer no mesmo dia letivo
-                da retirada.
-              </Text>
-            </View>
+                {/* LISTA DE HORÁRIOS DO TURNO SELECIONADO */}
+                {currentListToRender.map((item, index) => {
+                  if (item.status === "OCCUPIED") {
+                    return (
+                      <View key={`occ-${index}`} style={styles.slotRowOccupied}>
+                        <Text style={styles.slotTextOccupied}>
+                          {item.start} às {item.end}
+                        </Text>
+                        <Text style={styles.occupiedBadge}>OCUPADO</Text>
+                      </View>
+                    );
+                  }
+
+                  const selected = isSlotSelected(item.start);
+                  return (
+                    <Pressable
+                      key={`av-${item.start}`}
+                      onPress={() => handleSlotPress(item.start)}
+                      style={[
+                        styles.slotRow,
+                        selected && styles.slotRowSelected,
+                      ]}
+                    >
+                      <View style={styles.slotLeft}>
+                        {selected ? (
+                          <View style={styles.checkIconWrap}>
+                            <Ionicons
+                              name="checkmark"
+                              size={16}
+                              color="#FBBC04"
+                            />
+                          </View>
+                        ) : (
+                          <View style={styles.checkIconWrapEmpty} />
+                        )}
+                        <Text
+                          style={[
+                            styles.slotText,
+                            selected && styles.slotTextSelected,
+                          ]}
+                        >
+                          {item.start} às {item.end}
+                        </Text>
+                      </View>
+                    </Pressable>
+                  );
+                })}
+              </View>
+            )}
 
             {errorMsg && <Text style={styles.errorText}>{errorMsg}</Text>}
-
-            <Pressable
-              style={styles.button}
-              onPress={validateAndSubmit}
-              disabled={loading}
-            >
-              {loading ? (
-                <ActivityIndicator color="#FFF" />
-              ) : (
-                <Text style={styles.buttonText}>Confirmar Agendamento</Text>
-              )}
-            </Pressable>
           </ScrollView>
+
+          {/* BARRA FLUTUANTE INFERIOR DE CONFIRMAÇÃO */}
+          {hasSelection && (
+            <View style={styles.bottomFloatingBarWrap}>
+              <Pressable
+                style={styles.bottomFloatingBar}
+                onPress={validateAndSubmit}
+                disabled={loading}
+              >
+                <View style={styles.bottomFloatingTextGroup}>
+                  <Text style={styles.bottomFloatingTitle}>
+                    {selectionStart} às {finalEndTime}
+                  </Text>
+                  <Text style={styles.bottomFloatingSub}>
+                    Retirada na Biblioteca do Campus
+                  </Text>
+                </View>
+
+                {loading ? (
+                  <ActivityIndicator color="#FBBC04" />
+                ) : (
+                  <View style={styles.bottomFloatingAction}>
+                    <Text style={styles.bottomFloatingActionText}>
+                      Confirmar
+                    </Text>
+                    <Ionicons
+                      name="chevron-forward"
+                      size={20}
+                      color="#FBBC04"
+                    />
+                  </View>
+                )}
+              </Pressable>
+            </View>
+          )}
         </View>
       </View>
-
-      {/* MODAIS DE RELÓGIO (Ocultos até o clique) */}
-      <LudusClockPicker
-        visible={pickerStartVisible}
-        title="Horário de Retirada"
-        initialDate={startTime}
-        minHour={8}
-        maxHour={18}
-        onClose={() => setPickerStartVisible(false)}
-        onConfirm={(date) => {
-          setStartTime(date);
-          setPickerStartVisible(false);
-        }}
-      />
-
-      <LudusClockPicker
-        visible={pickerEndVisible}
-        title="Horário de Devolução"
-        initialDate={endTime}
-        minHour={8}
-        maxHour={19}
-        onClose={() => setPickerEndVisible(false)}
-        onConfirm={(date) => {
-          setEndTime(date);
-          setPickerEndVisible(false);
-        }}
-      />
     </Modal>
   );
 }
@@ -283,99 +460,219 @@ const styles = StyleSheet.create({
     justifyContent: "flex-end",
   },
   content: {
-    backgroundColor: "#FFF",
+    backgroundColor: "#F9FAFB",
     borderTopLeftRadius: 32,
     borderTopRightRadius: 32,
-    padding: 24,
-    maxHeight: "90%",
+    paddingHorizontal: 20,
+    paddingTop: 24,
+    maxHeight: "92%",
   },
   header: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    marginBottom: 20,
+    marginBottom: 16,
   },
   title: {
     fontSize: 22,
     fontWeight: "900",
-    color: "#04096E",
+    color: "#0A1F5C", // Ludus Blue
   },
   closeBtn: {
     padding: 4,
-    backgroundColor: "#F3F4F6",
+    backgroundColor: "#E5E7EB",
     borderRadius: 20,
   },
-  row: {
-    flexDirection: "row",
-    justifyContent: "space-between",
+  stateContainer: {
+    paddingVertical: 32,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "#FFF",
+    borderRadius: 16,
+    marginVertical: 12,
+    borderWidth: 1,
+    borderColor: "#F3F4F6",
   },
-  fieldContainer: {
+  stateText: {
+    marginTop: 10,
+    fontSize: 14,
+    fontWeight: "600",
+    color: "#6B7280",
+    textAlign: "center",
+    paddingHorizontal: 20,
+  },
+  listContainer: {
+    marginTop: 12,
+    marginBottom: 20,
+  },
+
+  // --- Estilos das Abas Manhã / Tarde (Estilo Ludus) ---
+  periodTabs: {
+    flexDirection: "row",
+    backgroundColor: "#F1F3F7", // Cinza/Azulado muito suave
+    borderRadius: 14,
+    padding: 4,
     marginBottom: 16,
   },
-  label: {
-    fontSize: 12,
-    fontWeight: "900",
-    color: "#6B7280",
-    marginBottom: 8,
-    textTransform: "uppercase",
+  periodTab: {
+    flex: 1,
+    paddingVertical: 12,
+    alignItems: "center",
+    borderRadius: 10,
   },
-  pickerBox: {
+  periodTabActive: {
+    backgroundColor: "#0A1F5C", // Ludus Blue
+    shadowColor: "#0A1F5C",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  periodTabText: {
+    fontSize: 14,
+    fontWeight: "800",
+    color: "#7A8194",
+  },
+  periodTabTextActive: {
+    color: "#FBBC04", // Ludus Yellow
+  },
+
+  // --- Estilos da Lista de Horários ---
+  slotRow: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#F9FAFB",
+    justifyContent: "space-between",
+    backgroundColor: "#FFF",
     borderWidth: 1,
     borderColor: "#E5E7EB",
-    borderRadius: 14,
-    padding: 16,
+    borderRadius: 12,
+    paddingVertical: 16,
+    paddingHorizontal: 16,
+    marginBottom: 8,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.02,
+    shadowRadius: 2,
+    elevation: 1,
   },
-  pickerText: {
-    marginLeft: 10,
-    fontSize: 16,
-    color: "#0A1628",
-    fontWeight: "800",
+  slotRowSelected: {
+    borderColor: "#0A1F5C", // Ludus Blue na borda
+    backgroundColor: "#F4F6FF", // Azul bem clarinho no fundo
   },
-  infoBox: {
+  slotLeft: {
     flexDirection: "row",
-    backgroundColor: "#FFF9E6",
-    padding: 16,
-    borderRadius: 14,
     alignItems: "center",
-    marginBottom: 20,
+  },
+  checkIconWrap: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: "#0A1F5C", // Ludus Blue no círculo do check
+    alignItems: "center",
+    justifyContent: "center",
+    marginRight: 12,
+  },
+  checkIconWrapEmpty: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    borderWidth: 1.5,
+    borderColor: "#D1D5DB",
+    marginRight: 12,
+  },
+  slotText: {
+    fontSize: 16,
+    fontWeight: "700",
+    color: "#111",
+  },
+  slotTextSelected: {
+    color: "#0A1F5C", // Texto fica Azul Ludus forte
+  },
+  slotRowOccupied: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    backgroundColor: "#F3F4F6",
     borderWidth: 1,
-    borderColor: "#FBBC04",
+    borderColor: "#E5E7EB",
+    borderRadius: 12,
+    paddingVertical: 16,
+    paddingHorizontal: 16,
+    marginBottom: 8,
   },
-  infoText: {
-    marginLeft: 12,
-    fontSize: 13,
-    color: "#9A6B00",
-    flex: 1,
+  slotTextOccupied: {
+    fontSize: 16,
     fontWeight: "600",
-    lineHeight: 18,
+    color: "#9CA3AF",
+    marginLeft: 36,
   },
+  occupiedBadge: {
+    fontSize: 12,
+    fontWeight: "900",
+    color: "#E62325", // Ludus Red alertando "OCUPADO"
+    letterSpacing: 0.5,
+  },
+
   errorText: {
-    color: "#E62325",
+    color: "#E62325", // Ludus Red
     fontSize: 14,
     fontWeight: "bold",
     textAlign: "center",
+    marginTop: 10,
     marginBottom: 16,
     backgroundColor: "#FEF2F2",
     padding: 12,
     borderRadius: 8,
   },
-  button: {
-    backgroundColor: "#04096E",
-    padding: 18,
-    borderRadius: 16,
-    alignItems: "center",
-    shadowColor: "#04096E",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.2,
-    shadowRadius: 8,
-    elevation: 4,
+
+  // --- Barra Flutuante de Confirmação ---
+  bottomFloatingBarWrap: {
+    position: "absolute",
+    bottom: 24,
+    left: 20,
+    right: 20,
   },
-  buttonText: {
-    color: "#f8f7f3",
+  bottomFloatingBar: {
+    backgroundColor: "#0A1F5C", // Ludus Blue
+    borderRadius: 20,
+    paddingVertical: 16,
+    paddingHorizontal: 20,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    shadowColor: "#04096E",
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.3,
+    shadowRadius: 10,
+    elevation: 8,
+  },
+  bottomFloatingTextGroup: {
+    flex: 1,
+  },
+  bottomFloatingTitle: {
+    color: "#FFF",
     fontSize: 16,
     fontWeight: "900",
+    marginBottom: 2,
+  },
+  bottomFloatingSub: {
+    color: "#D6DCFF",
+    fontSize: 12,
+    fontWeight: "600",
+  },
+  bottomFloatingAction: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "rgba(255,255,255,0.15)",
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 12,
+    marginLeft: 10,
+  },
+  bottomFloatingActionText: {
+    color: "#FBBC04", // Ludus Yellow no texto "Confirmar"
+    fontWeight: "900",
+    fontSize: 14,
+    marginRight: 4,
   },
 });
